@@ -35,12 +35,14 @@
 /obj/item/implant/adrenalin/activate()
 	uses--
 	to_chat(imp_in, "<span class='notice'>You feel a sudden surge of energy!</span>")
-	imp_in.SetStunned(0)
-	imp_in.SetWeakened(0)
-	imp_in.SetParalysis(0)
+	imp_in.SetStun(0)
+	imp_in.SetKnockdown(0)
+	imp_in.SetUnconscious(0)
+	imp_in.SetParalyzed(0)
+	imp_in.SetImmobilized(0)
 	imp_in.adjustStaminaLoss(-75)
-	imp_in.lying = 0
-	imp_in.update_canmove()
+	imp_in.set_resting(FALSE)
+	imp_in.update_mobility()
 
 	imp_in.reagents.add_reagent("synaptizine", 10)
 	imp_in.reagents.add_reagent("omnizine", 10)

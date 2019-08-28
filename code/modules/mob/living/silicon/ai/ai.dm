@@ -40,7 +40,7 @@ var/list/ai_verbs_default = list(
 	icon_state = "ai"
 	move_resist = MOVE_FORCE_NORMAL
 	density = 1
-	status_flags = CANSTUN|CANPARALYSE|CANPUSH
+	status_flags = CANSTUN|CANUNCONSCIOUS|CANPUSH
 	mob_size = MOB_SIZE_LARGE
 	sight = SEE_TURFS | SEE_MOBS | SEE_OBJS
 	see_in_dark = 8
@@ -139,7 +139,7 @@ var/list/ai_verbs_default = list(
 	aiPDA = new/obj/item/pda/silicon/ai(src)
 	rename_character(null, pickedName)
 	anchored = 1
-	canmove = 0
+	mobility_flags &= ~MOBILITY_MOVE
 	density = 1
 	loc = loc
 
@@ -541,7 +541,7 @@ var/list/ai_verbs_default = list(
 
 	to_chat(src, "[anchored ? "<b>You are now anchored.</b>" : "<b>You are now unanchored.</b>"]")
 
-/mob/living/silicon/ai/update_canmove()
+/mob/living/silicon/ai/update_mobility()
 	return FALSE
 
 /mob/living/silicon/ai/proc/announcement()

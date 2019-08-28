@@ -10,8 +10,8 @@
 	range = 1
 	cooldown_min = 200 //100 deciseconds reduction per rank
 	var/list/protected_roles = list("Wizard","Changeling","Cultist") //which roles are immune to the spell
-	var/paralysis_amount_caster = 20 //how much the caster is paralysed for after the spell
-	var/paralysis_amount_victim = 20 //how much the victim is paralysed for after the spell
+	var/paralysis_amount_caster = 400 //how much the caster is paralysed for after the spell
+	var/paralysis_amount_victim = 400 //how much the victim is paralysed for after the spell
 	action_icon_state = "mindswap"
 
 /*
@@ -78,5 +78,5 @@ Also, you never added distance checking after target is selected. I've went ahea
 	//MIND TRANSFER END
 
 	//Here we paralyze both mobs and knock them out for a time.
-	caster.Paralyse(paralysis_amount_caster)
-	victim.Paralyse(paralysis_amount_victim)
+	caster.Unconscious(paralysis_amount_caster)
+	victim.Unconscious(paralysis_amount_victim)

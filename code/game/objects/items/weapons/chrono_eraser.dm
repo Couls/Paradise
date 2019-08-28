@@ -107,8 +107,8 @@
 	if(F)
 		if(field == F)
 			var/turf/currentpos = get_turf(src)
-			var/mob/living/user = src.loc
-			if((currentpos == startpos) && (field in view(CHRONO_BEAM_RANGE, currentpos)) && !user.lying && (user.stat == CONSCIOUS))
+			var/mob/living/user = loc
+			if((currentpos == startpos) && (field in view(CHRONO_BEAM_RANGE, currentpos)) && (user.mobility_flags & MOBILITY_STAND) && (user.stat == CONSCIOUS))
 				return 1
 		field_disconnect(F)
 		return 0
@@ -210,7 +210,7 @@
 			qdel(captured)
 			qdel(src)
 		else
-			captured.Paralyse(4)
+			captured.Unconscious(80)
 			if(captured.reagents)
 				captured.reagents.del_reagent("synaptizine") //you pesky thing you
 			if(captured.loc != src) //If they manage to escape, immediately kill them, this is so that even if there IS a way to get out, they won't use it

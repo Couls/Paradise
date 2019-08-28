@@ -1,5 +1,5 @@
 #define AB_CHECK_RESTRAINED 1
-#define AB_CHECK_STUNNED 2
+#define AB_CHECK_STUN 2
 #define AB_CHECK_LYING 4
 #define AB_CHECK_CONSCIOUS 8
 
@@ -67,20 +67,24 @@
 
 /datum/action/proc/IsAvailable()// returns 1 if all checks pass
 	if(!owner)
-		return 0
+		return FALSE
 	if(check_flags & AB_CHECK_RESTRAINED)
 		if(owner.restrained())
-			return 0
-	if(check_flags & AB_CHECK_STUNNED)
-		if(owner.stunned || owner.weakened)
-			return 0
+			return FALSE
+	if(check_flags & AB_CHECK_STUN)
+		if(isliving(owner))
+			var/mob/living/L = owner
+			if(L.IsParalyzed() || L.IsStun())
+				return FALSE
 	if(check_flags & AB_CHECK_LYING)
-		if(owner.lying)
-			return 0
+		if(isliving(owner))
+			var/mob/living/L = owner
+			if(!(L.mobility_flags & MOBILITY_STAND))
+				return FALSE
 	if(check_flags & AB_CHECK_CONSCIOUS)
 		if(owner.stat)
-			return 0
-	return 1
+			return FALSE
+	return TRUE
 
 /datum/action/proc/UpdateButtonIcon()
 	if(button)
@@ -107,7 +111,7 @@
 
 //Presets for item actions
 /datum/action/item_action
-	check_flags = AB_CHECK_RESTRAINED|AB_CHECK_STUNNED|AB_CHECK_LYING|AB_CHECK_CONSCIOUS
+	check_flags = AB_CHECK_RESTRAINED|AB_CHECK_STUN|AB_CHECK_LYING|AB_CHECK_CONSCIOUS
 	var/use_itemicon = TRUE
 
 /datum/action/item_action/New(Target, custom_icon, custom_icon_state)
@@ -440,7 +444,7 @@
 
 // for clothing accessories like holsters
 /datum/action/item_action/accessory
-	check_flags = AB_CHECK_RESTRAINED|AB_CHECK_STUNNED|AB_CHECK_LYING|AB_CHECK_CONSCIOUS
+	check_flags = AB_CHECK_RESTRAINED|AB_CHECK_STUN|AB_CHECK_LYING|AB_CHECK_CONSCIOUS
 
 /datum/action/item_action/accessory/IsAvailable()
 	. = ..()

@@ -91,10 +91,12 @@
 				if(type & 1 && !has_vision(information_only=TRUE))
 					return
 	// Added voice muffling for Issue 41.
-	if(stat == UNCONSCIOUS || (sleeping > 0 && stat != DEAD))
-		to_chat(src, "<I>... You can almost hear someone talking ...</I>")
-	else
-		to_chat(src, msg)
+	if(isliving(src))
+		var/mob/living/L = src
+		if(L.stat == UNCONSCIOUS || L.IsSleeping() && stat != DEAD)
+			to_chat(src, "<I>... You can almost hear someone talking ...</I>")
+		else
+			to_chat(src, msg)
 	return
 
 // Show a message to all mobs in sight of this one
@@ -1028,7 +1030,6 @@ var/list/slot_equipment_priority = list( \
 
 // facing verbs
 /mob/proc/canface()
-	if(!canmove)						return 0
 	if(client.moving)					return 0
 	if(world.time < client.move_delay)	return 0
 	if(stat==2)							return 0
@@ -1037,10 +1038,11 @@ var/list/slot_equipment_priority = list( \
 	if(restrained())					return 0
 	return 1
 
-/mob/proc/fall(var/forced)
-	drop_l_hand()
-	drop_r_hand()
-
+/mob/living/canface()
+	if(!(mobility_flags & MOBILITY_MOVE))
+		return FALSE
+	return ..()
+	
 /mob/proc/facedir(ndir)
 	if(!canface())
 		return 0

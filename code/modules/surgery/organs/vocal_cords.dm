@@ -213,14 +213,14 @@ var/static/regex/multispin_words = regex("like a record baby")
 	if(findtext(message, stun_words))
 		for(var/V in listeners)
 			var/mob/living/L = V
-			L.Stun(3 * power_multiplier)
+			L.Stun(60 * power_multiplier)
 		next_command = world.time + cooldown_stun
 
 	//WEAKEN
 	else if(findtext(message, weaken_words))
 		for(var/V in listeners)
 			var/mob/living/L = V
-			L.Weaken(3 * power_multiplier)
+			L.Paralyze(60 * power_multiplier)
 		next_command = world.time + cooldown_stun
 
 	//SLEEP
@@ -400,11 +400,12 @@ var/static/regex/multispin_words = regex("like a record baby")
 	else if((findtext(message, getup_words)))
 		for(var/V in listeners)
 			var/mob/living/L = V
-			if(L.resting)
-				L.lay_down() //aka get up
-			L.SetStunned(0)
-			L.SetWeakened(0)
-			L.SetParalysis(0) //i said get up i don't care if you're being tazed
+			L.set_resting(FALSE)
+			L.SetStun(0)
+			L.SetKnockdown(0)
+			L.SetUnconscious(0) //i said get up i don't care if you're being tazed
+			L.SetParalyzed(0)
+			L.SetImmobilized(0)
 		next_command = world.time + cooldown_damage
 
 	//SIT
@@ -466,7 +467,7 @@ var/static/regex/multispin_words = regex("like a record baby")
 			playsound(get_turf(owner), 'sound/items/bikehorn.ogg', 300, 1)
 		if(owner.mind && owner.mind.assigned_role == "Clown")
 			for(var/mob/living/carbon/C in listeners)
-				C.slip("your feet", 0, 7 * power_multiplier)
+				C.slip("your feet", 0, 140 * power_multiplier)
 			next_command = world.time + cooldown_stun
 		else
 			next_command = world.time + cooldown_meme

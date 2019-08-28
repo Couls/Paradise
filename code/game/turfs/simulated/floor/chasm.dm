@@ -109,7 +109,7 @@
 		AM.forceMove(T)
 		if(isliving(AM))
 			var/mob/living/L = AM
-			L.Weaken(5)
+			L.Paralyze(100)
 			L.adjustBruteLoss(30)
 	falling_atoms -= AM
 

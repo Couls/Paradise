@@ -88,13 +88,13 @@
 			to_chat(src, "<span class='warning'>The muzzle prevents you from vomiting!</span>")
 		return 0
 	if(stun)
-		Stun(4)
+		Stun(80)
 	if(nutrition < 100 && !blood)
 		if(message)
 			visible_message("<span class='warning'>[src] dry heaves!</span>", \
 							"<span class='userdanger'>You try to throw up, but there's nothing your stomach!</span>")
 		if(stun)
-			Weaken(10)
+			Paralyze(200)
 	else
 		if(message)
 			visible_message("<span class='danger'>[src] throws up!</span>", \
@@ -162,12 +162,12 @@
 	do_jitter_animation(jitteriness)
 	AdjustStuttering(2)
 	if((!tesla_shock || (tesla_shock && siemens_coeff > 0.5)) && stun)
-		Stun(2)
+		Stun(40)
 	spawn(20)
 		AdjustJitter(-1000, bound_lower = 10) //Still jittery, but vastly less
 		if((!tesla_shock || (tesla_shock && siemens_coeff > 0.5)) && stun)
-			Stun(3)
-			Weaken(3)
+			Stun(60)
+			Paralyze(60)
 	if(shock_damage > 200)
 		src.visible_message(
 			"<span class='danger'>[src] was arc flashed by the [source]!</span>",
@@ -221,17 +221,18 @@
 			if(player_logged)
 				M.visible_message("<span class='notice'>[M] shakes [src], but [p_they()] [p_do()] not respond. Probably suffering from SSD.", \
 				"<span class='notice'>You shake [src], but [p_theyre()] unresponsive. Probably suffering from SSD.</span>")
-			if(lying) // /vg/: For hugs. This is how update_icon figgers it out, anyway.  - N3X15
+			if(!(mobility_flags & MOBILITY_STAND)) // /vg/: For hugs. This is how update_icon figgers it out, anyway.  - N3X15
 				if(ishuman(src))
 					var/mob/living/carbon/human/H = src
 					if(H.w_uniform)
 						H.w_uniform.add_fingerprint(M)
-				AdjustSleeping(-5)
-				if(sleeping == 0)
-					StopResting()
-				AdjustParalysis(-3)
-				AdjustStunned(-3)
-				AdjustWeakened(-3)
+				AdjustSleeping(-100)
+				AdjustUnconscious(-60)
+				AdjustStun(-60)
+				AdjustParalyzed(-60)
+				AdjustKnockdown(-60)
+				AdjustImmobilized(-60)
+				set_resting(FALSE)
 				playsound(loc, 'sound/weapons/thudswoosh.ogg', 50, 1, -1)
 				if(!player_logged)
 					M.visible_message( \
@@ -319,7 +320,7 @@
 		if(visual)
 			return
 		if(weakeyes)
-			Stun(2)
+			Stun(40)
 
 		var/obj/item/organ/internal/eyes/E = get_int_organ(/obj/item/organ/internal/eyes)
 		if(!E || (E && E.weld_proof))
@@ -409,7 +410,7 @@ var/list/ventcrawl_machinery = list(/obj/machinery/atmospherics/unary/vent_pump,
 		to_chat(src, "You must be conscious to do this!")
 		return
 
-	if(lying)
+	if(IsStun() || IsParalyzed())
 		to_chat(src, "You can't vent crawl while you're stunned!")
 		return
 
@@ -528,15 +529,15 @@ var/list/ventcrawl_machinery = list(/obj/machinery/atmospherics/unary/vent_pump,
 				hurt = FALSE*/
 	if(hit_atom.density && isturf(hit_atom))
 		if(hurt)
-			Weaken(1)
+			Paralyze(20)
 			take_organ_damage(10)
 	if(iscarbon(hit_atom) && hit_atom != src)
 		var/mob/living/carbon/victim = hit_atom
 		if(hurt)
 			victim.take_organ_damage(10)
 			take_organ_damage(10)
-			victim.Weaken(1)
-			Weaken(1)
+			victim.Paralyze(20)
+			Paralyze(20)
 			visible_message("<span class='danger'>[src] crashes into [victim], knocking them both over!</span>", "<span class='userdanger'>You violently crash into [victim]!</span>")
 		playsound(src, 'sound/weapons/punch1.ogg', 50, 1)
 
@@ -673,7 +674,7 @@ var/list/ventcrawl_machinery = list(/obj/machinery/atmospherics/unary/vent_pump,
 /mob/living/carbon/Topic(href, href_list)
 	..()
 	//strip panel
-	if(!usr.stat && usr.canmove && !usr.restrained() && in_range(src, usr))
+	if(!usr.incapacitated() && in_range(src, usr))
 		if(href_list["internal"])
 			var/slot = text2num(href_list["internal"])
 			var/obj/item/ITEM = get_item_by_slot(slot)
@@ -780,8 +781,8 @@ var/list/ventcrawl_machinery = list(/obj/machinery/atmospherics/unary/vent_pump,
 
 /mob/living/carbon/resist_fire()
 	fire_stacks -= 5
-	Weaken(3, 1, 1) //We dont check for CANWEAKEN, I don't care how immune to weakening you are, if you're rolling on the ground, you're busy.
-	update_canmove()
+	Paralyze(60, 1, 1) //We dont check for CANKNOCKDOWN, I don't care how immune to weakening you are, if you're rolling on the ground, you're busy.
+	update_mobility()
 	spin(32,2)
 	visible_message("<span class='danger'>[src] rolls on the floor, trying to put [p_them()]self out!</span>", \
 		"<span class='notice'>You stop, drop, and roll!</span>")
@@ -958,10 +959,10 @@ var/list/ventcrawl_machinery = list(/obj/machinery/atmospherics/unary/vent_pump,
 				W.plane = initial(W.plane)
 
 
-/mob/living/carbon/proc/slip(description, stun, weaken, tilesSlipped, walkSafely, slipAny, slipVerb = "slip")
+/mob/living/carbon/proc/slip(description, stun, knockdown, tilesSlipped, walkSafely, slipAny, slipVerb = "slip")
 	if(flying || buckled || (walkSafely && m_intent == MOVE_INTENT_WALK))
 		return 0
-	if((lying) && (!(tilesSlipped)))
+	if(!(mobility_flags & MOBILITY_STAND) && (!(tilesSlipped)))
 		return 0
 	if(!(slipAny))
 		if(istype(src, /mob/living/carbon/human))
@@ -977,7 +978,7 @@ var/list/ventcrawl_machinery = list(/obj/machinery/atmospherics/unary/vent_pump,
 	// Something something don't run with scissors
 	moving_diagonally = 0 //If this was part of diagonal move slipping will stop it.
 	Stun(stun)
-	Weaken(weaken)
+	Paralyze(knockdown)
 	return 1
 
 /mob/living/carbon/proc/can_eat(flags = 255)

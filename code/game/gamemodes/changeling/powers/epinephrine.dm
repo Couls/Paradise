@@ -11,17 +11,18 @@
 //Recover from stuns.
 /datum/action/changeling/epinephrine/sting_action(var/mob/living/user)
 
-	if(user.lying)
+	if(!(user.mobility_flags & MOBILITY_STAND))
 		to_chat(user, "<span class='notice'>We arise.</span>")
 	else
 		to_chat(user, "<span class='notice'>Adrenaline rushes through us.</span>")
 	user.SetSleeping(0)
 	user.stat = 0
-	user.SetParalysis(0)
-	user.SetStunned(0)
-	user.SetWeakened(0)
-	user.lying = 0
-	user.update_canmove()
+	user.SetUnconscious(0)
+	user.SetStun(0)
+	user.SetKnockdown(0)
+	user.SetImmobilized(0)
+	user.SetParalyzed(0)
+	user.update_mobility()
 	user.reagents.add_reagent("synaptizine", 20)
 	user.adjustStaminaLoss(-75)
 

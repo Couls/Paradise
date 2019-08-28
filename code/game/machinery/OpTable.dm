@@ -73,7 +73,7 @@
 
 
 /obj/machinery/optable/MouseDrop_T(atom/movable/O as mob|obj, mob/user as mob)
-	if(usr.stat || (!ishuman(user) && !isrobot(user)) || user.restrained() || !check_table(user) || user.weakened || user.stunned)
+	if(usr.stat || (!ishuman(user) && !isrobot(user)) || user.restrained() || !check_table(user) || user.IsKnockdown() || user.IsStun())
 		return
 
 	if(!ismob(O)) //humans only
@@ -117,8 +117,7 @@
 		user.visible_message("[user] climbs on the operating table.","You climb on the operating table.")
 	else
 		visible_message("<span class='alert'>[C] has been laid on the operating table by [user].</span>")
-	C.resting = 1
-	C.update_canmove()
+	C.set_resting(TRUE)
 	C.forceMove(loc)
 	if(user.pulling == C)
 		user.stop_pulling()

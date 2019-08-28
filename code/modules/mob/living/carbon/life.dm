@@ -138,7 +138,7 @@
 		if(!co2overloadtime)
 			co2overloadtime = world.time
 		else if(world.time - co2overloadtime > 120)
-			Paralyse(3)
+			Unconscious(60)
 			adjustOxyLoss(3)
 			if(world.time - co2overloadtime > 300)
 				adjustOxyLoss(8)
@@ -161,9 +161,9 @@
 		for(var/datum/gas/sleeping_agent/SA in breath.trace_gases)
 			var/SA_partialpressure = (SA.moles/breath.total_moles())*breath_pressure
 			if(SA_partialpressure > SA_para_min)
-				Paralyse(3)
+				Unconscious(60)
 				if(SA_partialpressure > SA_sleep_min)
-					AdjustSleeping(2, bound_lower = 0, bound_upper = 10)
+					Sleeping(min(AmountSleeping() + 40, 200))
 			else if(SA_partialpressure > 0.01)
 				if(prob(20))
 					emote(pick("giggle","laugh"))
@@ -255,7 +255,7 @@
 				M.adjustBruteLoss(5)
 				nutrition += 10
 
-//this updates all special effects: stunned, sleeping, weakened, druggy, stuttering, etc..
+//this updates all special effects: stunned, sleeping, knockdown, druggy, stuttering, etc..
 /mob/living/carbon/handle_status_effects()
 	..()
 
@@ -301,8 +301,8 @@
 		AdjustDrowsy(-restingpwr)
 		EyeBlurry(2)
 		if(prob(5))
-			AdjustSleeping(1)
-			Paralyse(5)
+			AdjustSleeping(20)
+			Unconscious(100)
 
 	if(confused)
 		AdjustConfused(-1)
@@ -316,33 +316,7 @@
 		spawn handle_hallucinations()
 
 		AdjustHallucinate(-2)
-
-/mob/living/carbon/handle_sleeping()
-	if(..())
-		handle_dreams()
-		adjustStaminaLoss(-10)
-		var/comfort = 1
-		if(istype(buckled, /obj/structure/bed))
-			var/obj/structure/bed/bed = buckled
-			comfort+= bed.comfort
-		for(var/obj/item/bedsheet/bedsheet in range(loc,0))
-			if(bedsheet.loc != loc) //bedsheets in your backpack/neck don't give you comfort
-				continue
-			comfort+= bedsheet.comfort
-			break //Only count the first bedsheet
-		if(drunk)
-			comfort += 1 //Aren't naps SO much better when drunk?
-			AdjustDrunk(-0.2*comfort) //reduce drunkenness while sleeping.
-		if(comfort > 1 && prob(3))//You don't heal if you're just sleeping on the floor without a blanket.
-			adjustBruteLoss(-1*comfort)
-			adjustFireLoss(-1*comfort)
-		if(prob(10) && health && hal_screwyhud != SCREWYHUD_CRIT)
-			emote("snore")
-	// Keep SSD people asleep
-	if(player_logged)
-		Sleeping(2)
-	return sleeping
-
+		
 /mob/living/carbon/handle_hud_icons()
 	return
 

@@ -63,7 +63,7 @@
 	if(isliving(AM))
 		var/mob/living/M = AM
 		if(immobilize)
-			M.canmove = FALSE
+			M.mobility_flags &= ~MOBILITY_MOVE
 
 	affecting.Add(AM)
 	while(AM && !stopthrow)
@@ -100,7 +100,8 @@
 	if(isliving(AM))
 		var/mob/living/M = AM
 		if(immobilize)
-			M.canmove = TRUE
+			M.mobility_flags |= MOBILITY_MOVE
+		M.update_mobility()
 
 /* Stops things thrown by a thrower, doesn't do anything */
 

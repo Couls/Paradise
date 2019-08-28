@@ -11,14 +11,19 @@
 #define BRAIN		"brain"
 
 #define STUN		"stun"
-#define WEAKEN		"weaken"
-#define PARALYZE	"paralize"
+#define KNOCKDOWN   "knockdown"
+#define UNCONSCIOUS "unconscious"
+#define PARALYZE	"paralyze"
+#define IMMOBILIZE	"immobilize"
 #define IRRADIATE	"irradiate"
 #define STUTTER		"stutter"
 #define SLUR		"slur"
 #define EYE_BLUR	"eye_blur"
 #define DROWSY		"drowsy"
 #define JITTER		"jitter"
+
+//slowdown when crawling
+#define CRAWLING_ADD_SLOWDOWN 2
 
 //I hate adding defines like this but I'd much rather deal with bitflags than lists and string searches
 #define BRUTELOSS 1
@@ -30,8 +35,8 @@
 
 //Bitflags defining which status effects could be or are inflicted on a mob
 #define CANSTUN		1
-#define CANWEAKEN	2
-#define CANPARALYSE	4
+#define CANKNOCKDOWN	2
+#define CANUNCONSCIOUS	4
 #define CANPUSH		8
 #define PASSEMOTES	16      //Mob has a cortical borer or holders inside of it that need to see emotes.
 #define GOTTAGOFAST	32

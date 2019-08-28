@@ -111,14 +111,19 @@
 /mob/proc/AdjustLoseBreath()
 	return
 
+/mob/proc/IsUnconscious() //non-living mobs shouldn't be unconscious
+	return FALSE
 
-/mob/proc/Paralyse()
+/mob/proc/AmountUnconscious()
 	return
 
-/mob/proc/SetParalysis()
+/mob/proc/Unconscious()
 	return
 
-/mob/proc/AdjustParalysis()
+/mob/proc/SetUnconscious()
+	return
+
+/mob/proc/AdjustUnconscious()
 	return
 
 
@@ -141,6 +146,11 @@
 /mob/proc/AdjustSleeping()
 	return
 
+/mob/proc/AmountSleeping()
+	return
+	
+/mob/proc/IsSleeping()
+	return
 
 /mob/proc/Slowed()
 	return
@@ -173,13 +183,18 @@
 /mob/proc/Stun()
 	return
 
-/mob/proc/SetStunned()
+/mob/proc/SetStun()
 	return
 
-/mob/proc/AdjustStunned()
+/mob/proc/AdjustStun()
 	return
 
+/mob/proc/IsStun() //non-living mobs shouldn't be stunned
+	return FALSE
 
+/mob/proc/AmountStun()
+	return
+		
 /mob/proc/Stuttering()
 	return
 
@@ -189,16 +204,49 @@
 /mob/proc/AdjustStuttering()
 	return
 
+/mob/proc/IsKnockdown() //non-living mobs shouldn't be knocked down
+	return FALSE
 
-/mob/proc/Weaken()
+/mob/proc/AmountKnockdown()
+	return
+	
+/mob/proc/Knockdown()
 	return
 
-/mob/proc/SetWeakened()
+/mob/proc/SetKnockdown()
 	return
 
-/mob/proc/AdjustWeakened()
+/mob/proc/AdjustKnockdown()
 	return
 
+/mob/proc/IsParalyzed()
+	return
+
+/mob/proc/AmountParalyzed()
+	return
+
+/mob/proc/SetParalyzed()
+	return
+
+/mob/proc/Paralyze()
+	return
+	
+/mob/proc/AdjustParalyzed()
+	return	
+/mob/proc/IsImmobilized()
+	return
+
+/mob/proc/AmountImmobilized()
+	return
+
+/mob/proc/SetImmobilized()
+	return
+
+/mob/proc/AdjustImmobilized()
+	return
+
+/mob/proc/Immobilize()
+	return
 /mob/proc/adjust_bodytemperature(amount, min_temp = 0, max_temp = INFINITY)
 	if(bodytemperature >= min_temp && bodytemperature <= max_temp)
 		bodytemperature = Clamp(bodytemperature + amount, min_temp, max_temp)

@@ -43,8 +43,8 @@
 			if(M.weakeyes)
 				M.visible_message("<span class='disarm'><b>[M]</b> screams and collapses!</span>")
 				to_chat(M, "<span class='userdanger'><font size=3>AAAAGH!</font></span>")
-				M.Weaken(15) //hella stunned
-				M.Stun(15)
+				M.Paralyze(300) //hella stunned
+				M.Stun(300)
 				if(ishuman(M))
 					M.emote("scream")
 					var/mob/living/carbon/human/H = M
@@ -53,18 +53,18 @@
 						E.receive_damage(8, 1)
 
 			if(M.flash_eyes(affect_silicon = TRUE))
-				M.Stun(max(10 / distance, 3))
-				M.Weaken(max(10 / distance, 3))
+				M.Stun(max(10 / distance, 3) * 20)
+				M.Paralyze(max(10 / distance, 3) * 20)
 
 
 		//Bang
 		if(bang)
 			if(!distance || A.loc == M || A.loc == M.loc) //Holding on person or being exactly where lies is significantly more dangerous and voids protection
-				M.Stun(10)
-				M.Weaken(10)
+				M.Stun(200)
+				M.Paralyze(200)
 			if(!ear_safety)
-				M.Stun(max(10 / distance, 3))
-				M.Weaken(max(10 / distance, 3))
+				M.Stun(max(10 / distance, 3) * 20)
+				M.Paralyze(max(10 / distance, 3) * 20)
 				M.AdjustEarDamage(rand(0, 5), 15)
 				if(iscarbon(M))
 					var/mob/living/carbon/C = M

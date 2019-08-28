@@ -273,7 +273,7 @@
 	nutriment_factor = 0
 	adj_dizzy = -5
 	adj_drowsy = -3
-	adj_sleepy = -2
+	adj_sleepy = -40
 	adj_temp_hot = 25
 	overdose_threshold = 45
 	addiction_chance = 1 // It's true.
@@ -288,9 +288,9 @@
 	if(holder.has_reagent("frostoil"))
 		holder.remove_reagent("frostoil", 5)
 	if(prob(50))
-		update_flags |= M.AdjustParalysis(-1, FALSE)
-		update_flags |= M.AdjustStunned(-1, FALSE)
-		update_flags |= M.AdjustWeakened(-1, FALSE)
+		update_flags |= M.AdjustUnconscious(-20, FALSE)
+		update_flags |= M.AdjustStun(-20, FALSE)
+		update_flags |= M.AdjustParalyzed(-20, FALSE)
 	return ..() | update_flags
 
 /datum/reagent/consumable/drink/coffee/overdose_process(mob/living/M, severity)
@@ -365,7 +365,7 @@
 	nutriment_factor = 0
 	adj_dizzy = -2
 	adj_drowsy = -1
-	adj_sleepy = -3
+	adj_sleepy = -60
 	adj_temp_hot = 20
 	drink_icon = "glass_brown"
 	drink_name = "Glass of Tea"

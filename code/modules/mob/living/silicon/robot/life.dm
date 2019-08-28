@@ -14,9 +14,9 @@
 		process_queued_alarms()
 
 /mob/living/silicon/robot/proc/clamp_values()
-	SetStunned(min(stunned, 30))
-	SetParalysis(min(paralysis, 30))
-	SetWeakened(min(weakened, 20))
+	SetStun(min(AmountStun(), 600))
+	SetUnconscious(min(AmountUnconscious(), 600))
+	SetKnockdown(min(AmountKnockdown(), 400))
 	SetSleeping(0)
 
 /mob/living/silicon/robot/proc/handle_robot_cell()
@@ -56,9 +56,6 @@
 			camera.status = 0
 		else
 			camera.status = 1
-
-	if(sleeping)
-		AdjustSleeping(-1)
 
 	if(.) //alive
 		if(!istype(src, /mob/living/silicon/robot/drone))
@@ -168,15 +165,13 @@
 			weapon_lock = 0
 			weaponlock_time = 120
 
-/mob/living/silicon/robot/update_canmove(delay_action_updates = 0)
-	if(paralysis || stunned || weakened || buckled || lockcharge || stat)
-		canmove = 0
+/mob/living/silicon/robot/update_mobility()
+	if(stat || buckled || lockcharge)
+		mobility_flags &= ~MOBILITY_MOVE
 	else
-		canmove = 1
+		mobility_flags = MOBILITY_FLAGS_DEFAULT
 	update_transform()
-	if(!delay_action_updates)
-		update_action_buttons_icon()
-	return canmove
+	update_action_buttons_icon()
 
 //Robots on fire
 /mob/living/silicon/robot/handle_fire()

@@ -20,8 +20,8 @@
 		H.unEquip(W)
 
 	H.regenerate_icons()
-	H.SetStunned(1)
-	H.canmove = 0
+	H.SetStun(20)
+	H.mobility_flags &= ~MOBILITY_MOVE
 	H.icon = null
 	H.invisibility = 101
 	var/has_primitive_form = H.dna.species.primitive_form // cache this
@@ -31,7 +31,7 @@
 	new /obj/effect/temp_visual/monkeyify(H.loc)
 	sleep(22)
 
-	H.SetStunned(0)
+	H.SetStun(0)
 	H.invisibility = initial(H.invisibility)
 
 	if(!has_primitive_form) //If the pre-change mob in question has no primitive set, this is going to be messy.
@@ -62,8 +62,8 @@
 			continue
 		H.unEquip(W)
 	H.regenerate_icons()
-	H.SetStunned(1)
-	H.canmove = 0
+	H.SetStun(20)
+	H.mobility_flags &= ~MOBILITY_MOVE
 	H.icon = null
 	H.invisibility = 101
 	var/has_greater_form = H.dna.species.greater_form //cache this
@@ -73,7 +73,7 @@
 	new /obj/effect/temp_visual/monkeyify/humanify(H.loc)
 	sleep(22)
 
-	H.SetStunned(0)
+	H.SetStun(0)
 	H.invisibility = initial(H.invisibility)
 
 	if(!has_greater_form) //If the pre-change mob in question has no primitive set, this is going to be messy.

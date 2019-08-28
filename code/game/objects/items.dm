@@ -159,14 +159,16 @@ var/global/image/fire_overlay = image("icon" = 'icons/goonstation/effects/fire.d
 	set category = null
 	set src in oview(1)
 
-	if(!istype(src.loc, /turf) || usr.stat || usr.restrained() )
+	if(!isturf(loc) || usr.stat || usr.restrained())
 		return
 
-	var/turf/T = src.loc
-
-	src.loc = null
-
-	src.loc = T
+	if(isliving(usr))
+		var/mob/living/L = usr
+		if(!(L.mobility_flags & MOBILITY_PICKUP))
+			return
+	var/turf/T = loc
+	loc = null
+	loc = T
 
 /obj/item/examine(mob/user, var/distance = -1)
 	var/size
@@ -421,6 +423,10 @@ var/global/image/fire_overlay = image("icon" = 'icons/goonstation/effects/fire.d
 		return
 	if(usr.incapacitated() || !Adjacent(usr))
 		return
+	if(isliving(usr))
+		var/mob/living/L = usr
+		if(!(L.mobility_flags & MOBILITY_PICKUP))
+			return
 	if(!iscarbon(usr) || isbrain(usr)) //Is humanoid, and is not a brain
 		to_chat(usr, "<span class='warning'>You can't pick things up!</span>")
 		return
@@ -509,8 +515,8 @@ var/global/image/fire_overlay = image("icon" = 'icons/goonstation/effects/fire.d
 					to_chat(M, "<span class='danger'>You drop what you're holding and clutch at your eyes!</span>")
 					M.drop_item()
 				M.AdjustEyeBlurry(10)
-				M.Paralyse(1)
-				M.Weaken(2)
+				M.Unconscious(20)
+				M.Paralyze(40)
 			if(eyes.damage >= eyes.min_broken_damage)
 				if(M.stat != 2)
 					to_chat(M, "<span class='danger'>You go blind!</span>")

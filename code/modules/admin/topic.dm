@@ -1246,7 +1246,7 @@
 		M.update_icons()
 
 		//so they black out before warping
-		M.Paralyse(5)
+		M.Unconscious(100)
 		sleep(5)
 		if(!M)	return
 
@@ -1307,7 +1307,7 @@
 				I.plane = initial(I.plane)
 				I.dropped(M)
 
-		M.Paralyse(5)
+		M.Unconscious(100)
 		sleep(5)
 		M.loc = pick(tdome1)
 		spawn(50)
@@ -1337,7 +1337,7 @@
 				I.plane = initial(I.plane)
 				I.dropped(M)
 
-		M.Paralyse(5)
+		M.Unconscious(100)
 		sleep(5)
 		M.loc = pick(tdome2)
 		spawn(50)
@@ -1359,7 +1359,7 @@
 			to_chat(usr, "This cannot be used on instances of type /mob/living/silicon/ai")
 			return
 
-		M.Paralyse(5)
+		M.Unconscious(100)
 		sleep(5)
 		M.loc = pick(tdomeadmin)
 		spawn(50)
@@ -1393,7 +1393,7 @@
 			var/mob/living/carbon/human/observer = M
 			observer.equip_to_slot_or_del(new /obj/item/clothing/under/suit_jacket(observer), slot_w_uniform)
 			observer.equip_to_slot_or_del(new /obj/item/clothing/shoes/black(observer), slot_shoes)
-		M.Paralyse(5)
+		M.Unconscious(100)
 		sleep(5)
 		M.loc = pick(tdomeobserve)
 		spawn(50)
@@ -1415,7 +1415,7 @@
 			to_chat(usr, "This cannot be used on instances of type /mob/living/silicon/ai")
 			return
 
-		M.Paralyse(5)
+		M.Unconscious(100)
 		sleep(5)
 		M.loc = pick(aroomwarp)
 		spawn(50)
@@ -1677,7 +1677,7 @@
 		else
 			M.adjustBruteLoss(min(99,(M.health - 1)))
 			M.Stun(20)
-			M.Weaken(20)
+			M.Paralyze(400)
 			M.Stuttering(20)
 
 	else if(href_list["CentcommReply"])
@@ -1901,7 +1901,7 @@
 				M.electrocute_act(5, "Lightning Bolt", safety = TRUE, override = TRUE)
 				playsound(get_turf(M), 'sound/magic/lightningshock.ogg', 50, 1, -1)
 				M.adjustFireLoss(75)
-				M.Weaken(5)
+				M.Paralyze(100)
 				to_chat(M, "<span class='userdanger'>The gods have punished you for your sins!</span>")
 				logmsg = "a lightning bolt."
 			if("Fire Death")
@@ -2647,7 +2647,7 @@
 
 //don't warp them if they aren't ready or are already there
 						continue
-					H.Paralyse(5)
+					H.Unconscious(100)
 					if(H.wear_id)
 						var/obj/item/card/id/id = H.get_idcard()
 						for(var/A in id.access)

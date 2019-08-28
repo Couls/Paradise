@@ -11,8 +11,8 @@
 	icon_state = "spark"
 	color = "#FFFF00"
 	nodamage = 1
-	stun = 5
-	weaken = 5
+	stun = 100
+	knockdown = 100
 	stutter = 5
 	jitter = 20
 	hitsound = 'sound/weapons/tase.ogg'
@@ -27,7 +27,7 @@
 		var/mob/living/carbon/C = target
 		if(HULK in C.mutations)
 			C.say(pick(";RAAAAAAAARGH!", ";HNNNNNNNNNGGGGGGH!", ";GWAAAAAAAARRRHHH!", "NNNNNNNNGGGGGGGGHH!", ";AAAAAAARRRGH!" ))
-		else if(C.status_flags & CANWEAKEN)
+		else if(C.status_flags & CANKNOCKDOWN)
 			spawn(5)
 				C.do_jitter_animation(jitter)
 
@@ -48,7 +48,7 @@
 	icon_state = "toxin"
 	damage = 5
 	damage_type = TOX
-	weaken = 5
+	paralyze = 100
 	range = 7
 
 /obj/item/projectile/energy/shuriken
@@ -56,7 +56,7 @@
 	icon_state = "toxin"
 	damage = 10
 	damage_type = TOX
-	weaken = 5
+	paralyze = 100
 	stutter = 5
 
 /obj/item/projectile/energy/bolt
@@ -65,7 +65,7 @@
 	damage = 15
 	damage_type = TOX
 	nodamage = 0
-	weaken = 5
+	paralyze = 100
 	stutter = 5
 
 /obj/item/projectile/energy/bolt/large

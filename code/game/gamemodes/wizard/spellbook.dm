@@ -850,7 +850,7 @@
 /obj/item/spellbook/oneuse/knock/recoil(mob/user as mob)
 	..()
 	to_chat(user, "<span class='warning'>You're knocked down!</span>")
-	user.Weaken(20)
+	user.Paralyze(40)
 
 /obj/item/spellbook/oneuse/horsemask
 	spell = /obj/effect/proc_holder/spell/targeted/horsemask

@@ -228,9 +228,10 @@
 		return
 	if(M.health > 0)
 		M.adjustOxyLoss(-1)
-	M.AdjustStunned(-4)
-	M.AdjustWeakened(-4)
-	M.AdjustStunned(-4)
+	M.AdjustStun(-80)
+	M.AdjustParalyzed(-80)
+	M.AdjustParalyzed(-80)
+	M.AdjustImmobilized(-80)
 	if(M.reagents.get_reagent_amount("epinephrine") < 5)
 		M.reagents.add_reagent("epinephrine", 5)
 	chassis.use_power(energy_drain)

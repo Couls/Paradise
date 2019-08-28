@@ -196,16 +196,13 @@
 	if(src.stat == DEAD)
 		src.lying = 1
 	else
-		if(src.paralysis || src.stunned || src.weakened || (status_flags && FAKEDEATH)) //Stunned etc.
-			if(src.stunned > 0)
-				AdjustStunned(-1)
-				src.stat = 0
-			if(src.weakened > 0)
-				AdjustWeakened(-1)
+		if(src.IsUnconscious() || src.IsKnockdown() || (status_flags && FAKEDEATH)) //Stunned etc.
+			if(src.IsKnockdown())
+				AdjustParalyzed(-20)
 				src.lying = 0
 				src.stat = 0
-			if(src.paralysis > 0)
-				AdjustParalysis(-1)
+			if(src.IsUnconscious())
+				AdjustUnconscious(-20)
 				src.lying = 0
 				src.stat = 0
 
@@ -266,9 +263,9 @@
 /mob/living/carbon/slime/proc/handle_targets()
 	if(Tempstun)
 		if(!Victim) // not while they're eating!
-			canmove = 0
+			mobility_flags &= ~MOBILITY_MOVE
 	else
-		canmove = 1
+		mobility_flags |= MOBILITY_MOVE
 
 	if(attacked > 50) attacked = 50
 
@@ -284,7 +281,8 @@
 			Discipline--
 
 	if(!client)
-		if(!canmove) return
+		if(!(mobility_flags & MOBILITY_MOVE))
+			return
 
 		if(Victim) return // if it's eating someone already, continue eating!
 
@@ -328,7 +326,7 @@
 						if(isslimeperson(H))
 							continue
 
-					if(!L.canmove) // Only one slime can latch on at a time.
+					if(!(L.mobility_flags & MOBILITY_MOVE)) // Only one slime can latch on at a time.
 						var/notarget = 0
 						for(var/mob/living/carbon/slime/M in view(1,L))
 							if(M.Victim == L)
@@ -361,13 +359,13 @@
 			if(Leader)
 				if(holding_still)
 					holding_still = max(holding_still - 1, 0)
-				else if(canmove && isturf(loc))
+				else if((mobility_flags & MOBILITY_MOVE) && isturf(loc))
 					step_to(src, Leader)
 
 			else if(hungry)
 				if(holding_still)
 					holding_still = max(holding_still - hungry, 0)
-				else if(canmove && isturf(loc) && prob(50))
+				else if((mobility_flags & MOBILITY_MOVE) && isturf(loc) && prob(50))
 					step(src, pick(cardinal))
 
 			else
@@ -375,7 +373,7 @@
 					holding_still = max(holding_still - 1, 0)
 				else if(docile && pulledby)
 					holding_still = 10
-				else if(canmove && isturf(loc) && prob(33))
+				else if((mobility_flags & MOBILITY_MOVE) && isturf(loc) && prob(33))
 					step(src, pick(cardinal))
 		else if(!AIproc)
 			spawn()

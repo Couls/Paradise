@@ -224,7 +224,7 @@
 
 //same as above
 /mob/living/pointed(atom/A as mob|obj|turf in view())
-	if(incapacitated(ignore_lying = TRUE))
+	if(incapacitated())
 		return FALSE
 	if(status_flags & FAKEDEATH)
 		return FALSE
@@ -414,9 +414,11 @@
 	setBrainLoss(0)
 	setStaminaLoss(0)
 	SetSleeping(0)
-	SetParalysis(0, 1, 1)
-	SetStunned(0, 1, 1)
-	SetWeakened(0, 1, 1)
+	SetUnconscious(0)
+	SetStun(0)
+	SetKnockdown(0)
+	SetImmobilized(0)
+	SetParalyzed(0)
 	SetSlowed(0)
 	SetLoseBreath(0)
 	SetDizzy(0)
@@ -448,7 +450,7 @@
 		buckled.buckled_mob = null
 		buckled = null
 		anchored = initial(anchored)
-		update_canmove()
+		update_mobility()
 		clear_alert("buckled")
 		post_buckle_mob(src)
 
@@ -533,7 +535,7 @@
 			if(get_dist(src, pulling) > 1 || (moving_diagonally != SECOND_DIAG_STEP && ((pull_dir - 1) & pull_dir))) // puller and pullee more than one tile away or in diagonal position
 				if(isliving(pulling))
 					var/mob/living/M = pulling
-					if(M.lying && !M.buckled && (prob(M.getBruteLoss() * 200 / M.maxHealth)))
+					if(!(M.mobility_flags & MOBILITY_STAND) && !M.buckled && (prob(M.getBruteLoss() * 200 / M.maxHealth)))
 						M.makeTrail(T)
 				pulling.Move(T, get_dir(pulling, T)) // the pullee tries to reach our previous position
 				if(pulling && get_dist(src, pulling) > 1) // the pullee couldn't keep up
@@ -612,7 +614,7 @@
 	set name = "Resist"
 	set category = "IC"
 
-	if(!isliving(src) || next_move > world.time || stat || weakened || stunned || paralysis)
+	if(!isliving(src) || next_move > world.time || stat || IsKnockdown() || IsStun() || IsUnconscious())
 		return
 	changeNext_move(CLICK_CD_RESIST)
 
@@ -629,7 +631,7 @@
 		var/obj/C = loc
 		C.container_resist(src)
 
-	else if(canmove)
+	else if(mobility_flags & MOBILITY_MOVE)
 		if(on_fire)
 			resist_fire() //stop, drop, and roll
 		else if(last_special <= world.time)
@@ -686,7 +688,7 @@
 
 /mob/living/proc/Exhaust()
 	to_chat(src, "<span class='notice'>You're too exhausted to keep going...</span>")
-	Weaken(5)
+	Paralyze(100)
 
 /mob/living/proc/get_visible_name()
 	return name
@@ -877,7 +879,8 @@
 				. += config.run_speed
 			if(MOVE_INTENT_WALK)
 				. += config.walk_speed
-
+	if(!(mobility_flags & MOBILITY_STAND))
+		. += CRAWLING_ADD_SLOWDOWN
 
 /mob/living/proc/can_use_guns(var/obj/item/gun/G)
 	if(G.trigger_guard != TRIGGER_GUARD_ALLOW_ALL && !IsAdvancedToolUser() && !issmall(src))
@@ -890,7 +893,7 @@
 		return FALSE
 	if(!(AM.can_be_pulled(src, state, force)))
 		return FALSE
-	if(incapacitated())
+	if(!(mobility_flags & MOBILITY_PULL))
 		return
 	// If we're pulling something then drop what we're currently pulling and pull this instead.
 	AM.add_fingerprint(src)
@@ -1026,12 +1029,12 @@
 				GLOB.dead_mob_list += src
 	. = ..()
 	switch(var_name)
-		if("weakened")
-			SetWeakened(var_value)
-		if("stunned")
-			SetStunned(var_value)
-		if("paralysis")
-			SetParalysis(var_value)
+		if("knockdown")
+			SetKnockdown(var_value)
+		if("stun")
+			SetStun(var_value)
+		if("unconscious")
+			SetUnconscious(var_value)
 		if("sleeping")
 			SetSleeping(var_value)
 		if("maxHealth")

@@ -169,8 +169,8 @@ structure_check() searches for nearby cultist structures required for the invoca
 		to_chat(L, "<span class='cultlarge'><i>\"YOUR SOUL BURNS WITH YOUR ARROGANCE!!!\"</i></span>")
 		if(L.reagents)
 			L.reagents.add_reagent("hell_water", 10)
-		L.Weaken(7)
-		L.Stun(7)
+		L.Paralyze(140)
+		L.Stun(140)
 	fail_invoke()
 
 /obj/effect/rune/proc/do_invoke_glow()
@@ -739,7 +739,7 @@ var/list/teleport_runes = list()
 			for(var/M in invokers)
 				var/mob/living/L = M
 				to_chat(L, "<span class='userdanger'>You chant in unison and a colossal burst of energy knocks you backward!</span>")
-				L.Weaken(2)
+				L.Paralyze(40)
 	qdel(src) //delete before pulsing because it's a delay reee
 	empulse(E, 9*invokers.len, 12*invokers.len, 1) // Scales now, from a single room to most of the station depending on # of chanters
 
@@ -795,7 +795,7 @@ var/list/teleport_runes = list()
 			user.visible_message("<span class='warning'>[user] slowly relaxes, the glow around [user.p_them()] dimming.</span>", \
 								 "<span class='danger'>You are re-united with your physical form. [src] releases its hold over you.</span>")
 			user.color = initial(user.color)
-			user.Weaken(3)
+			user.Paralyze(60)
 			rune_in_use = 0
 			affecting = null
 			user.update_sight()
@@ -920,7 +920,7 @@ var/list/teleport_runes = list()
 				continue
 			to_chat(C, "<span class='cultlarge'>Your blood boils in your veins!</span>")
 			C.take_overall_damage(45,45)
-			C.Stun(7)
+			C.Stun(140)
 	qdel(src)
 	explosion(T, -1, 0, 1, 5)
 

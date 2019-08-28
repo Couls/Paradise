@@ -1,4 +1,4 @@
-#define STUN_SET_AMOUNT	2
+#define STUN_SET_AMOUNT	40
 
 /obj/item/organ/internal/cyberimp
 	name = "cybernetic implant"
@@ -130,10 +130,14 @@
 	..()
 	if(crit_fail)
 		return
-	if(owner.stunned > STUN_SET_AMOUNT)
-		owner.SetStunned(STUN_SET_AMOUNT)
-	if(owner.weakened > STUN_SET_AMOUNT)
-		owner.SetWeakened(STUN_SET_AMOUNT)
+	if(owner.AmountStun() > STUN_SET_AMOUNT)
+		owner.SetStun(STUN_SET_AMOUNT)
+	if(owner.AmountKnockdown() > STUN_SET_AMOUNT)
+		owner.SetKnockdown(STUN_SET_AMOUNT)
+	if(owner.AmountParalyzed() > STUN_SET_AMOUNT)
+		owner.SetParalyzed(STUN_SET_AMOUNT)
+	if(owner.AmountImmobilized() > STUN_SET_AMOUNT)
+		owner.SetImmobilized(STUN_SET_AMOUNT)
 
 /obj/item/organ/internal/cyberimp/brain/anti_stun/emp_act(severity)
 	if(crit_fail || emp_proof)
@@ -269,7 +273,7 @@
 
 /obj/item/organ/internal/cyberimp/chest/reviver/on_life()
 	if(reviving)
-		if(owner.stat == UNCONSCIOUS && (owner.sleeping == 0)) //!owner.sleeping didn't work for whatever dumb reason
+		if(owner.stat == UNCONSCIOUS && !owner.IsSleeping()) //!owner.sleeping didn't work for whatever dumb reason
 			spawn(30)
 				if(prob(90) && owner.getOxyLoss())
 					owner.adjustOxyLoss(-3)

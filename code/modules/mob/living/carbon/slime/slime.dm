@@ -13,9 +13,9 @@
 	see_in_dark = 8
 	update_slimes = 0
 	faction = list("slime","neutral")
-	// canstun and canweaken don't affect slimes because they ignore stun and weakened variables
+	// canstun and canweaken don't affect slimes because they ignore stun and knockdown variables
 	// for the sake of cleanliness, though, here they are.
-	status_flags = CANPARALYSE|CANPUSH
+	status_flags = CANUNCONSCIOUS|CANPUSH
 
 	var/cores = 1 // the number of /obj/item/slime_extract's the slime has left inside
 	var/mutation_chance = 30 // Chance of mutating, should be between 25 and 35
@@ -465,13 +465,13 @@
 
 					spawn(0)
 						if(user)
-							canmove = 0
+							mobility_flags &= ~MOBILITY_MOVE
 							step_away(src, user)
 							if(prob(25 + W.force))
 								sleep(2)
 								if(user)
 									step_away(src, user)
-								canmove = 1
+								mobility_flags = MOBILITY_FLAGS_DEFAULT
 
 		else
 			if(prob(10 + W.force*2))
@@ -490,13 +490,13 @@
 
 					spawn(0)
 						if(user)
-							canmove = 0
+							mobility_flags &= ~MOBILITY_MOVE
 							step_away(src, user)
 							if(prob(25 + W.force*4))
 								sleep(2)
 								if(user)
 									step_away(src, user)
-							canmove = 1
+							mobility_flags = MOBILITY_FLAGS_DEFAULT
 	..()
 
 /mob/living/carbon/slime/restrained()

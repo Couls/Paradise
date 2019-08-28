@@ -654,7 +654,7 @@
 		return 0
 
 	if(href_list["toggle_piece"])
-		if(ishuman(usr) && (usr.stat || usr.stunned || usr.lying))
+		if(ishuman(usr) && usr.incapacitated())
 			return 0
 		toggle_piece(href_list["toggle_piece"], usr)
 	else if(href_list["toggle_seals"])
@@ -861,7 +861,7 @@
 	if(get_dist(src, user) <= 1) //Needs to be adjecant to the rig to get shocked.
 		if(electrocute_mob(user, cell, src)) //electrocute_mob() handles removing charge from the cell, no need to do that here.
 			spark_system.start()
-			if(user.stunned)
+			if(user.IsStun())
 				return 1
 	return 0
 
@@ -973,7 +973,7 @@
 		return
 
 	//This is sota the goto stop mobs from moving var
-	if(wearer.notransform || !wearer.canmove)
+	if(wearer.notransform || !(wearer.mobility_flags & MOBILITY_MOVE))
 		return
 
 	if(!wearer.lastarea)
@@ -993,9 +993,9 @@
 
 	if(isturf(wearer.loc))
 		if(wearer.restrained())//Why being pulled while cuffed prevents you from moving
-			for(var/mob/M in range(wearer, 1))
+			for(var/mob/living/M in range(wearer, 1))
 				if(M.pulling == wearer)
-					if(!M.restrained() && M.stat == 0 && M.canmove && wearer.Adjacent(M))
+					if(!M.restrained() && M.stat == 0 && (M.mobility_flags & MOBILITY_MOVE) && wearer.Adjacent(M))
 						to_chat(user, "<span class='notice'>Your host is restrained! They can't move!</span>")
 						return 0
 					else
@@ -1046,7 +1046,7 @@
 	unseal(user)
 	return 1
 
-/obj/item/rig/proc/can_touch(var/mob/user, var/mob/wearer)
+/obj/item/rig/proc/can_touch(var/mob/living/user, var/mob/wearer)
 	if(!user)
 		return 0
 	if(!wearer.Adjacent(user))
@@ -1054,7 +1054,7 @@
 	if(user.restrained())
 		to_chat(user, "<span class='notice'>You need your hands free for this.</span>")
 		return 0
-	if(user.stat || user.paralysis || user.sleeping || user.lying || user.weakened)
+	if(user.stat || user.IsUnconscious() || user.IsSleeping() || user.lying || user.IsKnockdown())
 		return 0
 	return 1
 #undef ONLY_DEPLOY

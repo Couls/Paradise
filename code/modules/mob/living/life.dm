@@ -56,7 +56,7 @@
 
 	if(handle_regular_status_updates()) // Status & health update, are we dead or alive etc.
 		handle_disabilities() // eye, ear, brain damages
-		handle_status_effects() //all special effects, stunned, weakened, jitteryness, hallucination, sleeping, etc
+		handle_status_effects() //all special effects, stunned, knockdown, jitteryness, hallucination, sleeping, etc
 
 	if(client)
 		handle_regular_hud_updates()
@@ -97,34 +97,15 @@
 /mob/living/proc/handle_regular_status_updates()
 	return stat != DEAD
 
-//this updates all special effects: stunned, sleeping, weakened, druggy, stuttering, etc..
+//this updates all special effects: stunned, sleeping, knockdown, druggy, stuttering, etc..
 /mob/living/proc/handle_status_effects()
-	handle_stunned()
-	handle_weakened()
 	handle_stuttering()
 	handle_silent()
 	handle_drugged()
 	handle_slurring()
-	handle_paralysed()
-	handle_sleeping()
 	handle_slowed()
 	handle_drunk()
 	handle_cultslurring()
-
-
-/mob/living/proc/handle_stunned()
-	if(stunned)
-		AdjustStunned(-1, updating = 1, force = 1)
-		if(!stunned)
-			update_icons()
-	return stunned
-
-/mob/living/proc/handle_weakened()
-	if(weakened)
-		AdjustWeakened(-1, updating = 1, force = 1)
-		if(!weakened)
-			update_icons()
-	return weakened
 
 /mob/living/proc/handle_stuttering()
 	if(stuttering)
@@ -150,19 +131,6 @@
 	if(cultslurring)
 		AdjustCultSlur(-1)
 	return cultslurring
-
-/mob/living/proc/handle_paralysed()
-	if(paralysis)
-		AdjustParalysis(-1, updating = 1, force = 1)
-	return paralysis
-
-/mob/living/proc/handle_sleeping()
-	if(sleeping)
-		AdjustSleeping(-1)
-		throw_alert("asleep", /obj/screen/alert/asleep)
-	else
-		clear_alert("asleep")
-	return sleeping
 
 /mob/living/proc/handle_slowed()
 	if(slowed)

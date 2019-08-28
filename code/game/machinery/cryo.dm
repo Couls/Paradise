@@ -374,8 +374,8 @@
 		occupant.bodytemperature += 2*(air_contents.temperature - occupant.bodytemperature)*current_heat_capacity/(current_heat_capacity + air_contents.heat_capacity())
 		occupant.bodytemperature = max(occupant.bodytemperature, air_contents.temperature) // this is so ugly i'm sorry for doing it i'll fix it later i promise
 		if(occupant.bodytemperature < T0C)
-			occupant.Sleeping(max(5/efficiency, (1/occupant.bodytemperature)*2000/efficiency))
-			occupant.Paralyse(max(5/efficiency, (1/occupant.bodytemperature)*3000/efficiency))
+			occupant.Sleeping(max(100/efficiency, (1/occupant.bodytemperature)*2000/efficiency))
+			occupant.Unconscious(max(100/efficiency, (1/occupant.bodytemperature)*3000/efficiency))
 			if(air_contents.oxygen > 2)
 				if(occupant.getOxyLoss())
 					occupant.adjustOxyLoss(-6)
@@ -427,7 +427,7 @@
 		return
 	M.stop_pulling()
 	M.forceMove(src)
-	if(M.health > -100 && (M.health < 0 || M.sleeping))
+	if(M.health > -100 && (M.health < 0 || M.IsSleeping()))
 		to_chat(M, "<span class='boldnotice'>You feel a cold liquid surround you. Your skin starts to freeze up.</span>")
 	occupant = M
 //	M.metabslow = 1

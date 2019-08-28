@@ -441,7 +441,7 @@ obj/spacepod/proc/add_equipment(mob/user, var/obj/item/spacepod_equipment/SPE, v
 				"<span class='warning'>You see [user] outside the door trying to rip it open!</span>")
 			if(do_after(user, 50, target = src))
 				target.forceMove(get_turf(src))
-				target.Stun(1)
+				target.Stun(20)
 				if(pilot)
 					pilot = null
 				else
@@ -991,7 +991,7 @@ obj/spacepod/proc/add_equipment(mob/user, var/obj/item/spacepod_equipment/SPE, v
 
 	for(var/i = 0, i<numticks, i++)
 		sleep(delayfraction)
-		if(!src || !user || !user.canmove || !(user.loc == T))
+		if(!src || !user || user.incapacitated() || !(user.loc == T))
 			return 0
 
 	return 1

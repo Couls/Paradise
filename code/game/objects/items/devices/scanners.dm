@@ -284,6 +284,9 @@ proc/healthscan(mob/user, mob/living/M, mode = 1, upgraded = FALSE)
 	set name = "Switch Verbosity"
 	set category = "Object"
 
+	if(usr.incapacitated())
+		return
+		
 	mode = !mode
 	switch(mode)
 		if(1)
@@ -743,7 +746,7 @@ proc/healthscan(mob/user, mob/living/M, mode = 1, upgraded = FALSE)
 	extra_font = (target.getBrainLoss() < 1 ?"<font color='blue'>" : "<font color='red'>")
 	dat += "[extra_font]\tApprox. Brain Damage %: [target.getBrainLoss()]<br>"
 
-	dat += "Paralysis Summary %: [target.paralysis] ([round(target.paralysis / 4)] seconds left!)<br>"
+	dat += "Unconscious Summary %: [target.AmountUnconscious()] ([target.AmountUnconscious() / 10] seconds left!)<br>"
 	dat += "Body Temperature: [target.bodytemperature-T0C]&deg;C ([target.bodytemperature*1.8-459.67]&deg;F)<br>"
 
 	dat += "<hr>"
