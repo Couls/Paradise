@@ -290,6 +290,8 @@
 			status += "blistered"
 		else if(burndamage > 0)
 			status += "numb"
+		if(LB.disabled)
+			status = "limp"
 		if(LB.status & ORGAN_MUTATED)
 			status = "weirdly shapen."
 		if(status == "")
@@ -304,8 +306,8 @@
 
 	if(H.bleed_rate)
 		to_chat(src, "<span class='danger'>You are bleeding!</span>")
-	if(staminaloss)
-		if(staminaloss > 30)
+	if(getStaminaLoss())
+		if(getStaminaLoss() > 30)
 			to_chat(src, "<span class='info'>You're completely exhausted.</span>")
 		else
 			to_chat(src, "<span class='info'>You feel fatigued.</span>")

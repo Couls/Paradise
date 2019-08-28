@@ -244,7 +244,7 @@
 		if(H.r_hand && (H.r_hand.flags & HANDSLOW))
 			. += H.r_hand.slowdown
 
-		var/health_deficiency = (H.maxHealth - H.health + H.staminaloss)
+		var/health_deficiency = (H.maxHealth - H.health + H.getStaminaLoss())
 		var/hungry = (500 - H.nutrition)/5 // So overeat would be 100 and default level would be 80
 		if(H.reagents)
 			for(var/datum/reagent/R in H.reagents.reagent_list)
@@ -462,6 +462,9 @@
 		var/obj/item/organ/external/temp = M.bodyparts_by_name["r_hand"]
 		if(M.hand)
 			temp = M.bodyparts_by_name["l_hand"]
+		if(temp && temp.disabled)
+			to_chat(M, "<span class='warning'> Your [temp.name] is disabled!</span>")
+			return
 		if(!temp || !temp.is_usable())
 			to_chat(M, "<span class='warning'>You can't use your hand.</span>")
 			return
@@ -539,7 +542,7 @@
 	return H.health - H.getStaminaLoss()
 
 /datum/species/proc/handle_hud_icons(mob/living/carbon/human/H)
-	if(!H.client)
+	if(!H || !H.client)
 		return
 	handle_hud_icons_health(H)
 	H.handle_hud_icons_health_overlay()
@@ -572,15 +575,11 @@
 
 /datum/species/proc/handle_hud_icons_health_doll(mob/living/carbon/human/H)
 	if(H.healthdoll)
+		H.healthdoll.cut_overlays()
 		if(H.stat == DEAD || (H.status_flags & FAKEDEATH))
 			H.healthdoll.icon_state = "healthdoll_DEAD"
-			if(H.healthdoll.overlays.len)
-				H.healthdoll.overlays.Cut()
 		else
-			var/list/new_overlays = list()
-			var/list/cached_overlays = H.healthdoll.cached_healthdoll_overlays
-			// Use the dead health doll as the base, since we have proper "healthy" overlays now
-			H.healthdoll.icon_state = "healthdoll_DEAD"
+			H.healthdoll.icon_state = "healthdoll_OVERLAY" // use the healthy overlay as base
 			for(var/obj/item/organ/external/O in H.bodyparts)
 				var/damage = O.burn_dam + O.brute_dam
 				var/comparison = (O.max_damage/5)
@@ -595,10 +594,12 @@
 					icon_num = 4
 				if(damage > (comparison*4))
 					icon_num = 5
-				new_overlays += "[O.limb_name][icon_num]"
-			H.healthdoll.overlays += (new_overlays - cached_overlays)
-			H.healthdoll.overlays -= (cached_overlays - new_overlays)
-			H.healthdoll.cached_healthdoll_overlays = new_overlays
+				if(icon_num)
+					H.healthdoll.add_overlay(mutable_appearance('icons/mob/screen_gen.dmi', "[O.limb_name][icon_num]"))
+			for(var/t in H.get_missing_limbs()) //Missing limbs
+				H.healthdoll.add_overlay(mutable_appearance('icons/mob/screen_gen.dmi', "[t]6"))
+			for(var/t in H.get_disabled_limbs()) //Disabled limbs
+				H.healthdoll.add_overlay(mutable_appearance('icons/mob/screen_gen.dmi', "[t]7"))
 
 /datum/species/proc/handle_hud_icons_nutrition(mob/living/carbon/human/H)
 	if(H.mind && H.mind.vampire && (H.mind in SSticker.mode.vampires)) //Vampires
