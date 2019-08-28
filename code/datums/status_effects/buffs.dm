@@ -85,7 +85,7 @@
 		last_cloneloss = owner.getCloneLoss()
 		last_staminaloss = owner.getStaminaLoss()
 		add_attack_logs(owner, owner, "gained blood-drunk stun immunity")
-		var/status = CANSTUN | CANWEAKEN | CANPARALYSE | IGNORESLOWDOWN
+		var/status = CANSTUN | CANKNOCKDOWN | CANUNCONSCIOUS | IGNORESLOWDOWN
 		owner.status_flags &= ~status
 		owner.playsound_local(get_turf(owner), 'sound/effects/singlebeat.ogg', 40, 1)
 
@@ -164,7 +164,7 @@
 	owner.staminaloss *= 0.1
 	owner.updatehealth()
 	add_attack_logs(owner, owner, "lost blood-drunk stun immunity")
-	owner.status_flags |= CANSTUN | CANWEAKEN | CANPARALYSE | IGNORESLOWDOWN
+	owner.status_flags |= CANSTUN | CANKNOCKDOWN | CANUNCONSCIOUS | IGNORESLOWDOWN
 
 /datum/status_effect/exercised
 	id = "Exercised"

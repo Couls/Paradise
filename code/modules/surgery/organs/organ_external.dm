@@ -303,7 +303,7 @@
 	disabled = new_disabled
 	owner.dna.species.handle_hud_icons(owner)
 	owner.update_body()
-	owner.update_canmove()
+	owner.update_mobility()
 /*
 This function completely restores a damaged organ to perfect condition.
 */

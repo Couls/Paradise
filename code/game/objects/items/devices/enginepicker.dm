@@ -15,7 +15,7 @@
 	var/isactive = FALSE
 
 /obj/item/enginepicker/attack_self(mob/living/carbon/user)
-	if(usr.stat || !usr.canmove || usr.restrained())
+	if(user.stat || !(user.mobility_flags & MOBILITY_MOVE) || user.restrained())
 		return
 
 	if(!isactive)

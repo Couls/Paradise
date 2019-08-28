@@ -22,7 +22,7 @@
 	if(stam)
 		var/total_health = (health - stam)
 		if(total_health <= HEALTH_THRESHOLD_CRIT && !stat)
-			if(!weakened)
+			if(!IsParalyzed())
 				to_chat(src, "<span class='notice'>You're too exhausted to keep going...</span>")
 			Paralyze(100)
 			setStaminaLoss(health - 2)
