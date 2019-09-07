@@ -16,6 +16,7 @@ var/global/list/map_transition_config = MAP_TRANSITION_CONFIG
 
 	GLOB.timezoneOffset = text2num(time2text(0, "hh")) * 36000
 
+	maptick_initialize()
 	makeDatumRefLists()
 	callHook("startup")
 
@@ -266,6 +267,7 @@ var/world_topic_spam_protect_time = world.timeofday
 			log_admin("[key_name(usr)] has requested an immediate world restart via client side debugging tools")
 		spawn(0)
 			to_chat(world, "<span class='boldannounce'>Rebooting world immediately due to host request</span>")
+		maptick_shutdown()
 		shutdown_logging() // Past this point, no logging procs can be used, at risk of data loss.
 		if(config && config.shutdown_on_reboot)
 			sleep(0)
@@ -303,6 +305,7 @@ var/world_topic_spam_protect_time = world.timeofday
 	//kick_clients_in_lobby("<span class='boldannounce'>The round came to an end with you in the lobby.</span>", 1)
 
 	Master.Shutdown()	//run SS shutdowns
+	maptick_shutdown()
 	shutdown_logging() // Past this point, no logging procs can be used, at risk of data loss.
 
 	for(var/client/C in GLOB.clients)
