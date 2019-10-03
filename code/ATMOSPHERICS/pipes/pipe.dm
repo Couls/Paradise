@@ -19,6 +19,7 @@
 		level = 1
 
 /obj/machinery/atmospherics/pipe/Destroy()
+	QDEL_NULL(parent)
 	releaseAirToTurf()
 	QDEL_NULL(air_temporary)
 
@@ -29,11 +30,6 @@
 			meter.transfer_fingerprints_to(PM)
 			qdel(meter)
 	. = ..()
-
-	// if we're somehow by ourself
-	if(parent && !QDELETED(parent) && parent.members.len == 1 && parent.members[1] == src)
-		qdel(parent)
-	parent = null
 
 /obj/machinery/atmospherics/pipe/attackby(obj/item/W, mob/user, params)
 	if(istype(W, /obj/item/analyzer))

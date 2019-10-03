@@ -100,6 +100,8 @@ var/pipenetwarnings = 10
 		addMachineryMember(A)
 
 /datum/pipeline/proc/merge(datum/pipeline/E)
+	if(E == src)
+		return
 	air.volume += E.air.volume
 	members.Add(E.members)
 	for(var/obj/machinery/atmospherics/pipe/S in E.members)
