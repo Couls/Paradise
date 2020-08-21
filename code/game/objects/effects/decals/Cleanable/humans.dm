@@ -1,6 +1,6 @@
 #define DRYING_TIME 5 * 60 * 10 //for 1 unit of depth in puddle (amount var)
 
-var/global/list/image/splatter_cache = list()
+GLOBAL_LIST_EMPTY(splatter_cache)
 
 /obj/effect/decal/cleanable/blood
 	name = "blood"
@@ -86,7 +86,7 @@ var/global/list/image/splatter_cache = list()
 		user.blood_DNA |= blood_DNA.Copy()
 		user.bloody_hands += taken
 		user.hand_blood_color = basecolor
-		user.update_inv_gloves(1)
+		user.update_inv_gloves()
 		user.verbs += /mob/living/carbon/human/proc/bloody_doodle
 
 /obj/effect/decal/cleanable/blood/can_bloodcrawl_in()
@@ -112,7 +112,8 @@ var/global/list/image/splatter_cache = list()
 
 /obj/effect/decal/cleanable/trail_holder //not a child of blood on purpose
 	name = "blood"
-	icon_state = "ltrails_1"
+	icon = 'icons/effects/effects.dmi'
+	icon_state = "nothing"
 	desc = "Your instincts say you shouldn't be following these."
 	gender = PLURAL
 	density = FALSE
@@ -142,8 +143,8 @@ var/global/list/image/splatter_cache = list()
 		icon_state = "writing1"
 
 /obj/effect/decal/cleanable/blood/writing/examine(mob/user)
-	..(user)
-	to_chat(user, "<span class='notice'>It reads: <font color='[basecolor]'>\"[message]\"<font></span>")
+	. = ..()
+	. += "<span class='notice'>It reads: <font color='[basecolor]'>\"[message]\"<font></span>"
 
 /obj/effect/decal/cleanable/blood/gibs
 	name = "gibs"
@@ -171,6 +172,9 @@ var/global/list/image/splatter_cache = list()
 	overlays.Cut()
 	overlays += giblets
 	. = ..()
+
+/obj/effect/decal/cleanable/blood/gibs/ex_act(severity)
+	return
 
 /obj/effect/decal/cleanable/blood/gibs/up
 	random_icon_states = list("gib1", "gib2", "gib3", "gib4", "gib5", "gib6", "gibup1", "gibup1", "gibup1")

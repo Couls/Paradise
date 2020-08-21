@@ -46,13 +46,13 @@
 		visible_message("\The [src] voices a strident beep, indicating a drone chassis is prepared.")
 
 /obj/machinery/drone_fabricator/examine(mob/user)
-	..(user)
+	. = ..()
 	if(produce_drones && drone_progress >= 100 && istype(user,/mob/dead) && config.allow_drone_spawn && count_drones() < config.max_maint_drones)
-		to_chat(user, "<BR><B>A drone is prepared. Select 'Join As Drone' from the Ghost tab to spawn as a maintenance drone.</B>")
+		. += "<BR><B>A drone is prepared. Select 'Join As Drone' from the Ghost tab to spawn as a maintenance drone.</B>"
 
 /obj/machinery/drone_fabricator/proc/count_drones()
 	var/drones = 0
-	for(var/mob/living/silicon/robot/drone/D in world)
+	for(var/mob/living/silicon/robot/drone/D in GLOB.silicon_mob_list)
 		if(D.key && D.client)
 			drones++
 	return drones
@@ -142,7 +142,7 @@
 	if(alert("Are you sure you want to respawn as a drone?", "Are you sure?", "Yes", "No") != "Yes")
 		return
 
-	for(var/obj/machinery/drone_fabricator/DF in world)
+	for(var/obj/machinery/drone_fabricator/DF in GLOB.machines)
 		if(DF.stat & NOPOWER || !DF.produce_drones)
 			continue
 

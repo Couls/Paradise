@@ -124,6 +124,11 @@
 	securityActive2 = null
 	return ..()
 
+/mob/living/silicon/pai/can_unbuckle()
+	return FALSE
+
+/mob/living/silicon/pai/can_buckle()
+	return FALSE
 
 /mob/living/silicon/pai/movement_delay()
 	. = ..()
@@ -313,7 +318,7 @@
 	set category = "pAI Commands"
 	set name = "Unfold Chassis"
 
-	if(stat || sleeping || paralysis || weakened)
+	if(stat || sleeping || paralysis || IsWeakened())
 		return
 
 	if(loc != card)
@@ -348,7 +353,7 @@
 	set category = "pAI Commands"
 	set name = "Collapse Chassis"
 
-	if(stat || sleeping || paralysis || weakened)
+	if(stat || sleeping || paralysis || IsWeakened())
 		return
 
 	if(loc == card)
@@ -430,9 +435,6 @@
 	// Pass lying down or getting up to our pet human, if we're in a rig.
 	if(stat == CONSCIOUS && istype(loc,/obj/item/paicard))
 		resting = 0
-		var/obj/item/rig/rig = get_rig()
-		if(istype(rig))
-			rig.force_rest(src)
 	else
 		resting = !resting
 		to_chat(src, "<span class='notice'>You are now [resting ? "resting" : "getting up"]</span>")
@@ -463,6 +465,9 @@
 	spawn(1)
 		if(stat != 2)
 			close_up()
+	return
+
+/mob/living/silicon/pai/welder_act()
 	return
 
 /mob/living/silicon/pai/attack_hand(mob/user as mob)
@@ -512,7 +517,7 @@
 /mob/living/silicon/pai/Bumped()
 	return
 
-/mob/living/silicon/pai/start_pulling(atom/movable/AM, state, force = move_force, supress_message = FALSE)
+/mob/living/silicon/pai/start_pulling(atom/movable/AM, state, force = pull_force, show_message = FALSE)
 	return FALSE
 
 /mob/living/silicon/pai/update_canmove(delay_action_updates = 0)
@@ -520,8 +525,7 @@
 	density = 0 //this is reset every canmove update otherwise
 
 /mob/living/silicon/pai/examine(mob/user)
-	to_chat(user, "<span class='info'>*---------*</span>")
-	..(user)
+	. = ..()
 
 	var/msg = "<span class='info'>"
 
@@ -534,12 +538,12 @@
 	if(print_flavor_text()) msg += "\n[print_flavor_text()]"
 
 	if(pose)
-		if( findtext(pose,".",lentext(pose)) == 0 && findtext(pose,"!",lentext(pose)) == 0 && findtext(pose,"?",lentext(pose)) == 0 )
+		if( findtext(pose,".",length(pose)) == 0 && findtext(pose,"!",length(pose)) == 0 && findtext(pose,"?",length(pose)) == 0 )
 			pose = addtext(pose,".") //Makes sure all emotes end with a period.
 		msg += "\nIt is [pose]"
 	msg += "\n*---------*</span>"
 
-	to_chat(user, msg)
+	. += msg
 
 /mob/living/silicon/pai/bullet_act(var/obj/item/projectile/Proj)
 	..(Proj)

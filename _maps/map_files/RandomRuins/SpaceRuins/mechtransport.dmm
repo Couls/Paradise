@@ -1,7 +1,7 @@
 //MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE
 "a" = (
-/turf/space,
-/area/space)
+/turf/template_noop,
+/area/template_noop)
 "b" = (
 /turf/simulated/shuttle/wall{
 	tag = "icon-swall_s6";
@@ -91,7 +91,7 @@
 	},
 /area/ruin/powered)
 "s" = (
-/obj/effect/decal/mecha_wreckage/phazon,
+/obj/structure/mecha_wreckage/phazon,
 /turf/simulated/shuttle/floor{
 	tag = "icon-floor2";
 	icon_state = "floor2"
@@ -104,14 +104,14 @@
 	},
 /area/ruin/powered)
 "u" = (
-/obj/effect/decal/mecha_wreckage/ripley/firefighter,
+/obj/structure/mecha_wreckage/ripley/firefighter,
 /turf/simulated/shuttle/floor{
 	tag = "icon-floor2";
 	icon_state = "floor2"
 	},
 /area/ruin/powered)
 "v" = (
-/obj/effect/decal/mecha_wreckage/ripley,
+/obj/structure/mecha_wreckage/ripley,
 /turf/simulated/shuttle/floor{
 	tag = "icon-floor2";
 	icon_state = "floor2"
@@ -150,7 +150,7 @@
 	},
 /area/ruin/powered)
 "A" = (
-/obj/effect/decal/mecha_wreckage/durand,
+/obj/structure/mecha_wreckage/durand,
 /turf/simulated/shuttle/floor{
 	tag = "icon-floor2";
 	icon_state = "floor2"
@@ -168,7 +168,7 @@
 /area/ruin/powered)
 "D" = (
 /obj/structure/lattice,
-/turf/space,
+/turf/template_noop,
 /area/space/nearstation)
 "E" = (
 /obj/item/stack/rods,
@@ -194,7 +194,7 @@
 /turf/simulated/floor/plating/airless,
 /area/ruin/powered)
 "J" = (
-/obj/effect/decal/mecha_wreckage/odysseus,
+/obj/structure/mecha_wreckage/odysseus,
 /turf/simulated/shuttle/floor{
 	tag = "icon-floor2";
 	icon_state = "floor2"
@@ -202,10 +202,10 @@
 /area/ruin/powered)
 "K" = (
 /obj/item/stack/sheet/metal,
-/turf/space,
+/turf/template_noop,
 /area/space/nearstation)
 "L" = (
-/obj/effect/decal/mecha_wreckage/gygax,
+/obj/structure/mecha_wreckage/gygax,
 /turf/simulated/shuttle/floor{
 	tag = "icon-floor3";
 	icon_state = "floor3"
@@ -228,7 +228,7 @@
 /area/ruin/powered)
 "P" = (
 /obj/item/stack/rods,
-/turf/space,
+/turf/template_noop,
 /area/space/nearstation)
 "Q" = (
 /turf/simulated/shuttle/wall{
@@ -239,6 +239,13 @@
 "R" = (
 /obj/structure/shuttle/engine/propulsion,
 /turf/simulated/shuttle/plating,
+/area/ruin/powered)
+"U" = (
+/obj/item/gps/ruin,
+/turf/simulated/shuttle/wall{
+	tag = "icon-swall12";
+	icon_state = "swall12"
+	},
 /area/ruin/powered)
 
 (1,1,1) = {"
@@ -313,7 +320,7 @@ a
 c
 g
 l
-q
+U
 r
 u
 t

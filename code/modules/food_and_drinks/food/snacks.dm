@@ -71,15 +71,15 @@
 	return
 
 /obj/item/reagent_containers/food/snacks/examine(mob/user)
-	if(..(user, 0))
-		if(bitecount==0)
-			return
-		else if(bitecount==1)
-			to_chat(user, "<span class='notice'>[src] was bitten by someone!</span>")
-		else if(bitecount<=3)
-			to_chat(user, "<span class='notice'>[src] was bitten [bitecount] times!</span>")
-		else
-			to_chat(user, "<span class='notice'>[src] was bitten multiple times!</span>")
+	. = ..()
+	if(in_range(user, src))
+		if(bitecount > 0)
+			if(bitecount==1)
+				. += "<span class='notice'>[src] was bitten by someone!</span>"
+			else if(bitecount<=3)
+				. += "<span class='notice'>[src] was bitten [bitecount] times!</span>"
+			else
+				. += "<span class='notice'>[src] was bitten multiple times!</span>"
 
 
 /obj/item/reagent_containers/food/snacks/attackby(obj/item/W, mob/user, params)
@@ -180,7 +180,7 @@
 
 /obj/item/reagent_containers/food/snacks/sliceable/examine(mob/user)
 	. = ..()
-	to_chat(user, "<span class='notice'>Alt-click to put something small inside.</span>")
+	. += "<span class='notice'>Alt-click to put something small inside.</span>"
 
 /obj/item/reagent_containers/food/snacks/sliceable/AltClick(mob/user)
 	var/obj/item/I = user.get_active_hand()
@@ -272,7 +272,6 @@
 //		reagents.add_reagent("xenomicrobes", 10)						//This is what is in the food item. you may copy/paste
 //		reagents.add_reagent("nutriment", 2)							//	this line of code for all the contents.
 //		bitesize = 3													//This is the amount each bite consumes.
-
 
 /obj/item/reagent_containers/food/snacks/badrecipe
 	name = "burned mess"

@@ -82,6 +82,15 @@
 			return
 	return
 
+/obj/item/storage/AltClick(mob/user)
+	if(ishuman(user) && Adjacent(user) && !user.incapacitated(FALSE, TRUE, TRUE))
+		orient2hud(user)
+		if(user.s_active)
+			user.s_active.close(user)
+		show_to(user)
+		playsound(loc, "rustle", 50, 1, -5)
+		add_fingerprint(user)
+	return ..()
 
 /obj/item/storage/proc/return_inv()
 
@@ -317,7 +326,7 @@
 	return 1
 
 //Call this proc to handle the removal of an item from the storage item. The item will be moved to the atom sent as new_target
-/obj/item/storage/proc/remove_from_storage(obj/item/W as obj, atom/new_location, burn = 0)
+/obj/item/storage/proc/remove_from_storage(obj/item/W as obj, atom/new_location)
 	if(!istype(W)) return 0
 
 	if(istype(src, /obj/item/storage/fancy))
@@ -351,17 +360,19 @@
 	W.on_exit_storage(src)
 	update_icon()
 	W.mouse_opacity = initial(W.mouse_opacity)
-	if(burn)
-		W.fire_act()
 	return 1
 
 /obj/item/storage/Exited(atom/A, loc)
 	remove_from_storage(A, loc) //worry not, comrade; this only gets called once
 	..()
 
-/obj/item/storage/empty_object_contents(burn, loc)
-	for(var/obj/item/Item in contents)
-		remove_from_storage(Item, loc, burn)
+/obj/item/storage/deconstruct(disassembled = TRUE)
+	var/drop_loc = loc
+	if(ismob(loc))
+		drop_loc = get_turf(src)
+	for(var/obj/item/I in contents)
+		remove_from_storage(I, drop_loc)
+	qdel(src)
 
 //This proc is called when you want to place an item into the storage item.
 /obj/item/storage/attackby(obj/item/I, mob/user, params)
@@ -457,7 +468,7 @@
 	boxes.plane = HUD_PLANE
 	closer = new /obj/screen/close(  )
 	closer.master = src
-	closer.icon_state = "x"
+	closer.icon_state = "backpack_close"
 	closer.layer = ABOVE_HUD_LAYER
 	closer.plane = ABOVE_HUD_PLANE
 	orient2hud()
@@ -471,10 +482,10 @@
 	return ..()
 
 /obj/item/storage/emp_act(severity)
-	if(!istype(loc, /mob/living))
-		for(var/obj/O in contents)
-			O.emp_act(severity)
 	..()
+	for(var/i in contents)
+		var/atom/A = i
+		A.emp_act(severity)
 
 /obj/item/storage/hear_talk(mob/living/M as mob, list/message_pieces)
 	..()
@@ -530,7 +541,7 @@
 	return depth
 
 /obj/item/storage/serialize()
-	var data = ..()
+	var/data = ..()
 	var/list/content_list = list()
 	data["content"] = content_list
 	data["slots"] = storage_slots
@@ -565,3 +576,9 @@
 
 /obj/item/storage/AllowDrop()
 	return TRUE
+
+/obj/item/storage/ex_act(severity)
+	for(var/atom/A in contents)
+		A.ex_act(severity)
+		CHECK_TICK
+	..()

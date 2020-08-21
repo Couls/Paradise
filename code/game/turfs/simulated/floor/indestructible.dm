@@ -1,10 +1,9 @@
 /turf/simulated/floor/indestructible
-	unacidable = TRUE
 
 /turf/simulated/floor/indestructible/ex_act(severity)
 	return
 
-/turf/simulated/floor/indestructible/blob_act()
+/turf/simulated/floor/indestructible/blob_act(obj/structure/blob/B)
 	return
 
 /turf/simulated/floor/indestructible/singularity_act()
@@ -54,8 +53,8 @@
 		icon_state = "necro[rand(2,3)]"
 
 /turf/simulated/floor/indestructible/necropolis/air
-	oxygen = 0
-	nitrogen = 0
+	oxygen = MOLES_O2STANDARD
+	nitrogen = MOLES_N2STANDARD
 	temperature = T20C
 
 /turf/simulated/floor/indestructible/boss //you put stone tiles on this and use it as a base

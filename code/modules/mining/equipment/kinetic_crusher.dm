@@ -32,28 +32,31 @@
 	return ..()
 
 /obj/item/twohanded/kinetic_crusher/examine(mob/living/user)
-	..()
-	to_chat(user, "<span class='notice'>Mark a large creature with the destabilizing force, then hit them in melee to do <b>[force + detonation_damage]</b> damage.</span>")
-	to_chat(user, "<span class='notice'>Does <b>[force + detonation_damage + backstab_bonus]</b> damage if the target is backstabbed, instead of <b>[force + detonation_damage]</b>.</span>")
+	. = ..()
+	. += "<span class='notice'>Mark a large creature with the destabilizing force, then hit them in melee to do <b>[force + detonation_damage]</b> damage.</span>"
+	. += "<span class='notice'>Does <b>[force + detonation_damage + backstab_bonus]</b> damage if the target is backstabbed, instead of <b>[force + detonation_damage]</b>.</span>"
 	for(var/t in trophies)
 		var/obj/item/crusher_trophy/T = t
-		to_chat(user, "<span class='notice'>It has \a [T] attached, which causes [T.effect_desc()].</span>")
+		. += "<span class='notice'>It has \a [T] attached, which causes [T.effect_desc()].</span>"
 
 /obj/item/twohanded/kinetic_crusher/attackby(obj/item/I, mob/living/user)
-	if(iscrowbar(I))
-		if(LAZYLEN(trophies))
-			to_chat(user, "<span class='notice'>You remove [src]'s trophies.</span>")
-			playsound(loc, I.usesound, 100, 1)
-			for(var/t in trophies)
-				var/obj/item/crusher_trophy/T = t
-				T.remove_from(src, user)
-		else
-			to_chat(user, "<span class='warning'>There are no trophies on [src].</span>")
-	else if(istype(I, /obj/item/crusher_trophy))
+	if(istype(I, /obj/item/crusher_trophy))
 		var/obj/item/crusher_trophy/T = I
 		T.add_to(src, user)
 	else
 		return ..()
+
+/obj/item/twohanded/kinetic_crusher/crowbar_act(mob/user, obj/item/I)
+	. = TRUE
+	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
+		return
+	if(LAZYLEN(trophies))
+		to_chat(user, "<span class='notice'>You remove [src]'s trophies.</span>")
+		for(var/t in trophies)
+			var/obj/item/crusher_trophy/T = t
+			T.remove_from(src, user)
+	else
+		to_chat(user, "<span class='warning'>There are no trophies on [src].</span>")
 
 /obj/item/twohanded/kinetic_crusher/attack(mob/living/target, mob/living/carbon/user)
 	if(!wielded)
@@ -62,6 +65,8 @@
 		user.drop_l_hand()
 		return
 	var/datum/status_effect/crusher_damage/C = target.has_status_effect(STATUS_EFFECT_CRUSHERDAMAGETRACKING)
+	if(!C)
+		C = target.apply_status_effect(STATUS_EFFECT_CRUSHERDAMAGETRACKING)
 	var/target_health = target.health
 	..()
 	for(var/t in trophies)
@@ -98,6 +103,8 @@
 		if(!CM || CM.hammer_synced != src || !L.remove_status_effect(STATUS_EFFECT_CRUSHERMARK))
 			return
 		var/datum/status_effect/crusher_damage/C = L.has_status_effect(STATUS_EFFECT_CRUSHERDAMAGETRACKING)
+		if(!C)
+			C = L.apply_status_effect(STATUS_EFFECT_CRUSHERDAMAGETRACKING)
 		var/target_health = L.health
 		for(var/t in trophies)
 			var/obj/item/crusher_trophy/T = t
@@ -191,8 +198,8 @@
 	var/denied_type = /obj/item/crusher_trophy
 
 /obj/item/crusher_trophy/examine(mob/living/user)
-	..()
-	to_chat(user, "<span class='notice'>Causes [effect_desc()] when attached to a kinetic crusher.</span>")
+	. = ..()
+	. += "<span class='notice'>Causes [effect_desc()] when attached to a kinetic crusher.</span>"
 
 /obj/item/crusher_trophy/proc/effect_desc()
 	return "errors"

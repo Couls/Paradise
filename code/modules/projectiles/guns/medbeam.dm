@@ -106,12 +106,10 @@
 	target.adjustBruteLoss(-4)
 	target.adjustFireLoss(-4)
 	if(ishuman(target))
-		var/var/mob/living/carbon/human/H = target
+		var/mob/living/carbon/human/H = target
 		for(var/obj/item/organ/external/E in H.bodyparts)
 			if(prob(10))
-				if(E.mend_fracture())
-					E.perma_injury = 0
-	return
+				E.mend_fracture()
 
 /obj/item/gun/medbeam/proc/on_beam_release(var/mob/living/target)
 	return

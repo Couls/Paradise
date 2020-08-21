@@ -8,7 +8,7 @@
 	tail = "wryntail"
 	punchdamagelow = 0
 	punchdamagehigh = 1
-	slowdown = 1
+	speed_mod = 1
 	warning_low_pressure = -300
 	hazard_low_pressure = 1
 	blurb = "The wryn (r-in, singular r-in) are a humanoid race that possess many bee-like features. Originating from Alveare they \
@@ -50,7 +50,7 @@
 
 
 /datum/species/wryn/handle_death(gibbed, mob/living/carbon/human/H)
-	for(var/mob/living/carbon/C in GLOB.living_mob_list)
+	for(var/mob/living/carbon/C in GLOB.alive_mob_list)
 		if(C.get_int_organ(/obj/item/organ/internal/wryn/hivenode))
 			to_chat(C, "<span class='danger'><B>Your antennae tingle as you are overcome with pain...</B></span>")
 			to_chat(C, "<span class='danger'>It feels like part of you has died.</span>") // This is bullshit

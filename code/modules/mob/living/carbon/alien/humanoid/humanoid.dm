@@ -2,7 +2,7 @@
 	name = "alien"
 	icon_state = "alien_s"
 
-	butcher_results = list(/obj/item/reagent_containers/food/snacks/xenomeat = 5, /obj/item/stack/sheet/animalhide/xeno = 1)
+	butcher_results = list(/obj/item/reagent_containers/food/snacks/monstermeat/xenomeat= 5, /obj/item/stack/sheet/animalhide/xeno = 1)
 	var/obj/item/r_store = null
 	var/obj/item/l_store = null
 	var/caste = ""
@@ -17,7 +17,6 @@
 
 //This is fine right now, if we're adding organ specific damage this needs to be updated
 /mob/living/carbon/alien/humanoid/New()
-	create_reagents(1000)
 	if(name == "alien")
 		name = text("alien ([rand(1, 1000)])")
 	real_name = name
@@ -64,15 +63,6 @@
 			AdjustEarDamage(15, 60)
 
 	take_overall_damage(b_loss, f_loss)
-
-/mob/living/carbon/alien/humanoid/attack_slime(mob/living/carbon/slime/M)
-	..()
-	var/damage = rand(5, 35)
-	if(M.is_adult)
-		damage = rand(10, 40)
-	adjustBruteLoss(damage)
-	add_attack_logs(src, M, "Slime'd for [damage] damage")
-	return
 
 /mob/living/carbon/alien/humanoid/restrained()
 	if(handcuffed)

@@ -33,7 +33,7 @@
 
 	for(var/i = 0;i<name_count;i++)
 		new_name = ""
-		for(var/x = rand(Floor(syllable_count/2),syllable_count);x>0;x--)
+		for(var/x = rand(FLOOR(syllable_count/2, 1),syllable_count);x>0;x--)
 			new_name += pick(syllables)
 		full_name += " [capitalize(lowertext(new_name))]"
 
@@ -98,7 +98,9 @@
 	if(!check_can_speak(speaker))
 		return FALSE
 
-	log_say("([name]-HIVE) [message]", speaker)
+	var/log_message = "([name]-HIVE) [message]"
+	log_say(log_message, speaker)
+	speaker.create_log(SAY_LOG, log_message)
 
 	if(!speaker_mask)
 		speaker_mask = speaker.name
@@ -454,7 +456,7 @@
 	exclaim_verb = "chitters"
 	colour = "alien"
 	key = "y"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 /datum/language/wryn/check_special_condition(mob/other)
@@ -485,7 +487,7 @@
 	exclaim_verb = "hisses"
 	colour = "alien"
 	key = "a"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 /datum/language/terrorspider
@@ -496,7 +498,7 @@
 	exclaim_verb = "chitters"
 	colour = "terrorspider"
 	key = "ts"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 /datum/language/ling
@@ -505,7 +507,7 @@
 	speech_verb = "says"
 	colour = "changeling"
 	key = "g"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 /datum/language/ling/broadcast(mob/living/speaker, message, speaker_mask)
@@ -522,7 +524,7 @@
 	speech_verb = "says"
 	colour = "shadowling"
 	key = "8"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 /datum/language/shadowling/broadcast(mob/living/speaker, message, speaker_mask)
@@ -541,7 +543,7 @@
 	exclaim_verb = "gibbers"
 	colour = "abductor"
 	key = "zw" //doesn't matter, this is their default and only language
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 /datum/language/abductor/broadcast(mob/living/speaker, message, speaker_mask)
@@ -570,7 +572,7 @@
 	exclaim_verb = "sings"
 	colour = "alien"
 	key = "bo"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 /datum/language/corticalborer/broadcast(mob/living/speaker, message, speaker_mask)
@@ -594,7 +596,7 @@
 	ask_verb = "queries"
 	exclaim_verb = "declares"
 	key = "b"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 	var/drone_only
 
@@ -605,7 +607,10 @@
 	if(!message)
 		return
 
-	log_say("(ROBOT) [message]", speaker)
+	var/log_message = "(ROBOT) [message]"
+	log_say(log_message, speaker)
+	speaker.create_log(SAY_LOG, log_message)
+
 	var/message_start = "<i><span class='game say'>[name], <span class='name'>[speaker.name]</span>"
 	var/message_body = "<span class='message'>[speaker.say_quote(message)],</i><span class='robot'>\"[message]\"</span></span></span>"
 
@@ -614,7 +619,7 @@
 			var/message_start_dead = "<i><span class='game say'>[name], <span class='name'>[speaker.name] ([ghost_follow_link(speaker, ghost=M)])</span>"
 			M.show_message("[message_start_dead] [message_body]", 2)
 
-	for(var/mob/living/S in GLOB.living_mob_list)
+	for(var/mob/living/S in GLOB.alive_mob_list)
 		if(drone_only && !istype(S,/mob/living/silicon/robot/drone))
 			continue
 		else if(isAI(S))
@@ -640,7 +645,7 @@
 	exclaim_verb = "transmits"
 	colour = "say_quote"
 	key = "d"
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	drone_only = TRUE
 	follow = TRUE
 
@@ -663,7 +668,7 @@
 	exclaim_verb = "tones"
 	colour = "say_quote"
 	key = "z"//Zwarmer...Or Zerg!
-	flags = RESTRICTED | HIVEMIND
+	flags = RESTRICTED | HIVEMIND | NOBABEL
 	follow = TRUE
 
 // Language handling.
@@ -762,19 +767,11 @@
 	desc = "Bark bark bark."
 	key = "vu"
 
-/datum/language/zombie
-	name = "Zombie"
-	desc = "BRAAAAAAINS!"
-	speech_verb = "moans"
-	whisper_verb = "mutters"
-	exclaim_verb = "wails"
-	colour = "zombie"
-	key = "zom"
-	flags = RESTRICTED
-	syllables = list("BRAAAAAAAAAAAAAAAAINS", "BRAAINS", "BRAINS")
-
-/mob/proc/grant_all_languages()
+/mob/proc/grant_all_babel_languages()
 	for(var/la in GLOB.all_languages)
-		add_language(la)
+		var/datum/language/new_language = GLOB.all_languages[la]
+		if(new_language.flags & NOBABEL)
+			continue
+		languages |= new_language
 
 #undef SCRAMBLE_CACHE_LEN

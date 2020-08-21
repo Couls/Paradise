@@ -33,7 +33,7 @@
 		//teleport person to cell
 		M.Paralyse(5)
 		sleep(5)	//so they black out before warping
-		M.loc = pick(prisonwarp)
+		M.loc = pick(GLOB.prisonwarp)
 		if(istype(M, /mob/living/carbon/human))
 			var/mob/living/carbon/human/prisoner = M
 			prisoner.equip_to_slot_or_del(new /obj/item/clothing/under/color/orange(prisoner), slot_w_uniform)
@@ -51,7 +51,7 @@
 	if(!ismob(M))
 		return
 
-	if(!check_rights(R_SERVER|R_EVENT))
+	if(!check_rights(R_EVENT))
 		return
 
 	var/msg = clean_input("Message:", text("Subtle PM to [M.key]"))
@@ -116,14 +116,14 @@
 
 	if(!msg)
 		return
-	msg = pencode_to_html(msg)
+	msg = admin_pencode_to_html(msg)
 	to_chat(world, "[msg]")
 	log_admin("GlobalNarrate: [key_name(usr)] : [msg]")
 	message_admins("<span class='boldnotice'>GlobalNarrate: [key_name_admin(usr)]: [msg]<BR></span>", 1)
 	feedback_add_details("admin_verb","GLN") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /client/proc/cmd_admin_direct_narrate(var/mob/M)	// Targetted narrate -- TLE
-	set category = "Event"
+	set category = null
 	set name = "Direct Narrate"
 
 	if(!check_rights(R_SERVER|R_EVENT))
@@ -158,7 +158,7 @@
 /client/proc/admin_headset_message(mob/M in GLOB.mob_list, sender = null)
 	var/mob/living/carbon/human/H = M
 
-	if(!check_rights(R_ADMIN))
+	if(!check_rights(R_EVENT))
 		return
 
 	if(!istype(H))
@@ -181,7 +181,7 @@
 
 	log_admin("[key_name(src)] replied to [key_name(H)]'s [sender] message with the message [input].")
 	message_admins("[key_name_admin(src)] replied to [key_name_admin(H)]'s [sender] message with: \"[input]\"")
-	to_chat(H, "You hear something crackle in your ears for a moment before a voice speaks.  \"Please stand by for a message from [sender == "Syndicate" ? "your benefactor" : "Central Command"].  Message as follows[sender == "Syndicate" ? ", agent." : ":"] <span class='bold'>[input].</span> Message ends.\"")
+	to_chat(H, "<span class = 'specialnoticebold'>Incoming priority transmission from [sender == "Syndicate" ? "your benefactor" : "Central Command"].  Message as follows[sender == "Syndicate" ? ", agent." : ":"]</span><span class = 'specialnotice'> [input]</span>")
 
 
 
@@ -361,8 +361,8 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		if(G_found.mind.assigned_role=="Alien")
 			if(alert("This character appears to have been an alien. Would you like to respawn them as such?",,"Yes","No")=="Yes")
 				var/turf/T
-				if(xeno_spawn.len)	T = pick(xeno_spawn)
-				else				T = pick(latejoin)
+				if(GLOB.xeno_spawn.len)	T = pick(GLOB.xeno_spawn)
+				else				T = pick(GLOB.latejoin)
 
 				var/mob/living/carbon/alien/new_xeno
 				switch(G_found.mind.special_role)//If they have a mind, we can determine which caste they were.
@@ -381,14 +381,14 @@ Traitors and the like can also be revived with the previous role mostly intact.
 				message_admins("<span class='notice'>[key_name_admin(usr)] has respawned [new_xeno.key] as a filthy xeno.</span>", 1)
 				return	//all done. The ghost is auto-deleted
 
-	var/mob/living/carbon/human/new_character = new(pick(latejoin))//The mob being spawned.
+	var/mob/living/carbon/human/new_character = new(pick(GLOB.latejoin))//The mob being spawned.
 
 	var/datum/data/record/record_found			//Referenced to later to either randomize or not randomize the character.
 	if(G_found.mind && !G_found.mind.active)	//mind isn't currently in use by someone/something
 		/*Try and locate a record for the person being respawned through data_core.
 		This isn't an exact science but it does the trick more often than not.*/
 		var/id = md5("[G_found.real_name][G_found.mind.assigned_role]")
-		for(var/datum/data/record/t in data_core.locked)
+		for(var/datum/data/record/t in GLOB.data_core.locked)
 			if(t.fields["id"]==id)
 				record_found = t//We shall now reference the record.
 				break
@@ -397,7 +397,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		new_character.real_name = record_found.fields["name"]
 		new_character.change_gender(record_found.fields["sex"])
 		new_character.age = record_found.fields["age"]
-		new_character.b_type = record_found.fields["b_type"]
+		new_character.dna.blood_type = record_found.fields["blood_type"]
 	else
 		new_character.change_gender(pick(MALE,FEMALE))
 		var/datum/preferences/A = new()
@@ -440,11 +440,13 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	//Now for special roles and equipment.
 	switch(new_character.mind.special_role)
 		if("traitor")
-			SSjobs.AssignRank(new_character, new_character.mind.assigned_role, 0)
-			SSjobs.EquipRank(new_character, new_character.mind.assigned_role, 1)
-			SSticker.mode.equip_traitor(new_character)
+			if(new_character.mind.has_antag_datum(/datum/antagonist/traitor))
+				var/datum/antagonist/traitor/T = new_character.mind.has_antag_datum(/datum/antagonist/traitor)
+				T.equip_traitor(src)
+			else
+				new_character.mind.add_antag_datum(/datum/antagonist/traitor)
 		if("Wizard")
-			new_character.loc = pick(wizardstart)
+			new_character.loc = pick(GLOB.wizardstart)
 			//ticker.mode.learn_basic_spells(new_character)
 			SSticker.mode.equip_wizard(new_character)
 		if("Syndicate")
@@ -462,13 +464,13 @@ Traitors and the like can also be revived with the previous role mostly intact.
 				if("Cyborg")//More rigging to make em' work and check if they're traitor.
 					new_character = new_character.Robotize()
 					if(new_character.mind.special_role=="traitor")
-						call(/datum/game_mode/proc/add_law_zero)(new_character)
+						new_character.mind.add_antag_datum(/datum/antagonist/traitor)
 				if("AI")
 					new_character = new_character.AIize()
 					var/mob/living/silicon/ai/ai_character = new_character
 					ai_character.moveToAILandmark()
 					if(new_character.mind.special_role=="traitor")
-						call(/datum/game_mode/proc/add_law_zero)(new_character)
+						new_character.mind.add_antag_datum(/datum/antagonist/traitor)
 				//Add aliens.
 				else
 					SSjobs.AssignRank(new_character, new_character.mind.assigned_role, 0)
@@ -479,7 +481,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		if(!record_found && new_character.mind.assigned_role != new_character.mind.special_role)//If there are no records for them. If they have a record, this info is already in there. Offstation special characters announced anyway.
 			//Power to the user!
 			if(alert(new_character,"Warning: No data core entry detected. Would you like to announce the arrival of this character by adding them to various databases, such as medical records?",,"No","Yes")=="Yes")
-				data_core.manifest_inject(new_character)
+				GLOB.data_core.manifest_inject(new_character)
 
 			if(alert(new_character,"Would you like an active AI to announce this character?",,"No","Yes")=="Yes")
 				call(/mob/new_player/proc/AnnounceArrival)(new_character, new_character.mind.assigned_role)
@@ -509,7 +511,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	if(!istext(ckey))	return 0
 
 	var/alien_caste = input(usr, "Please choose which caste to spawn.","Pick a caste",null) as null|anything in list("Queen","Hunter","Sentinel","Drone","Larva")
-	var/obj/effect/landmark/spawn_here = xeno_spawn.len ? pick(xeno_spawn) : pick(latejoin)
+	var/obj/effect/landmark/spawn_here = GLOB.xeno_spawn.len ? pick(GLOB.xeno_spawn) : pick(GLOB.latejoin)
 	var/mob/living/carbon/alien/new_xeno
 	switch(alien_caste)
 		if("Queen")		new_xeno = new /mob/living/carbon/alien/humanoid/queen/large(spawn_here)
@@ -531,7 +533,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	var/list/mobs = list()
 	var/list/ghosts = list()
 	var/list/sortmob = sortAtom(GLOB.mob_list)                           // get the mob list.
-	/var/any=0
+	var/any=0
 	for(var/mob/dead/observer/M in sortmob)
 		mobs.Add(M)                                             //filter it where it's only ghosts
 		any = 1                                                 //if no ghosts show up, any will just be 0
@@ -570,7 +572,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	feedback_add_details("admin_verb","IONC") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /client/proc/cmd_admin_rejuvenate(mob/living/M as mob in GLOB.mob_list)
-	set category = "Event"
+	set category = null
 	set name = "Rejuvenate"
 
 	if(!check_rights(R_REJUVINATE))
@@ -610,7 +612,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	if(type == "Custom")
 		type = clean_input("What would you like the report type to be?", "Report Type", "Encrypted Transmission")
 
-	var/customname = clean_input("Pick a title for the report.", "Title", MsgType[type])
+	var/customname = input(usr, "Pick a title for the report.", "Title", MsgType[type]) as text|null
 	if(!customname)
 		return
 	var/input = input(usr, "Please enter anything you want. Anything. Serious.", "What's the message?") as message|null
@@ -621,11 +623,11 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		if("Yes")
 			var/beepsound = input(usr, "What sound should the announcement make?", "Announcement Sound", "") as anything in MsgSound
 
-			command_announcement.Announce(input, customname, MsgSound[beepsound], , , type)
+			GLOB.command_announcement.Announce(input, customname, MsgSound[beepsound], , , type)
 			print_command_report(input, "[command_name()] Update")
 		if("No")
 			//same thing as the blob stuff - it's not public, so it's classified, dammit
-			command_announcer.autosay("A classified message has been printed out at all communication consoles.");
+			GLOB.command_announcer.autosay("A classified message has been printed out at all communication consoles.")
 			print_command_report(input, "Classified [command_name()] Update")
 		else
 			return
@@ -636,7 +638,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 
 
 /client/proc/cmd_admin_delete(atom/A as obj|mob|turf in view())
-	set category = "Admin"
+	set category = null
 	set name = "Delete"
 
 	if(!check_rights(R_ADMIN))
@@ -824,7 +826,10 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	else
 		SSshuttle.emergency.canRecall = FALSE
 
-	SSshuttle.emergency.request()
+	if(seclevel2num(get_security_level()) >= SEC_LEVEL_RED)
+		SSshuttle.emergency.request(coefficient = 0.5, redAlert = TRUE)
+	else
+		SSshuttle.emergency.request()
 
 	feedback_add_details("admin_verb","CSHUT") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 	log_admin("[key_name(usr)] admin-called the emergency shuttle.")
@@ -872,6 +877,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	if(SSshuttle)
 		SSshuttle.emergencyNoEscape = !SSshuttle.emergencyNoEscape
 
+	feedback_add_details("admin_verb", "DENYSHUT")
 	log_admin("[key_name(src)] has [SSshuttle.emergencyNoEscape ? "denied" : "allowed"] the shuttle to be called.")
 	message_admins("[key_name_admin(usr)] has [SSshuttle.emergencyNoEscape ? "denied" : "allowed"] the shuttle to be called.")
 
@@ -883,7 +889,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		return
 
 	to_chat(usr, text("<span class='danger'>Attack Log for []</span>", mob))
-	for(var/t in M.attack_log)
+	for(var/t in M.attack_log_old)
 		to_chat(usr, t)
 	feedback_add_details("admin_verb","ATTL") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
@@ -952,7 +958,9 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	if(confirm != "Yes")
 		return
 
-	GLOB.nttc_config.reset()
+	for(var/obj/machinery/tcomms/core/C in GLOB.tcomms_machines)
+		C.nttc.reset()
+
 	log_admin("[key_name(usr)] reset NTTC scripts.")
 	message_admins("[key_name_admin(usr)] reset NTTC scripts.")
 	feedback_add_details("admin_verb","RAT2") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
@@ -975,7 +983,8 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	var/role_string
 	var/obj_count = 0
 	var/obj_string = ""
-	for(var/mob/living/carbon/human/H in GLOB.living_mob_list)
+	for(var/thing in GLOB.human_list)
+		var/mob/living/carbon/human/H = thing
 		if(!isLivingSSD(H))
 			continue
 		mins_ssd = round((world.time - H.last_logout) / 600)
@@ -984,15 +993,17 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		else
 			job_string = "-"
 		key_string = H.key
-		if(job_string in command_positions)
+		if(job_string in GLOB.command_positions)
 			job_string = "<U>" + job_string + "</U>"
 		role_string = "-"
+		obj_count = 0
+		obj_string = ""
 		if(H.mind)
 			if(H.mind.special_role)
 				role_string = "<U>[H.mind.special_role]</U>"
 			if(!H.key && H.mind.key)
 				key_string = H.mind.key
-			for(var/datum/objective/O in all_objectives)
+			for(var/datum/objective/O in GLOB.all_objectives)
 				if(O.target == H.mind)
 					obj_count++
 			if(obj_count > 0)
@@ -1010,7 +1021,8 @@ Traitors and the like can also be revived with the previous role mostly intact.
 	msg += "AFK Players:<BR><TABLE border='1'>"
 	msg += "<TR><TD><B>Key</B></TD><TD><B>Real Name</B></TD><TD><B>Job</B></TD><TD><B>Mins AFK</B></TD><TD><B>Special Role</B></TD><TD><B>Area</B></TD><TD><B>PPN</B></TD><TD><B>Cryo</B></TD></TR>"
 	var/mins_afk
-	for(var/mob/living/carbon/human/H in GLOB.living_mob_list)
+	for(var/thing in GLOB.human_list)
+		var/mob/living/carbon/human/H = thing
 		if(H.client == null || H.stat == DEAD) // No clientless or dead
 			continue
 		mins_afk = round(H.client.inactivity / 600)
@@ -1021,7 +1033,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		else
 			job_string = "-"
 		key_string = H.key
-		if(job_string in command_positions)
+		if(job_string in GLOB.command_positions)
 			job_string = "<U>" + job_string + "</U>"
 		role_string = "-"
 		obj_count = 0
@@ -1031,7 +1043,7 @@ Traitors and the like can also be revived with the previous role mostly intact.
 				role_string = "<U>[H.mind.special_role]</U>"
 			if(!H.key && H.mind.key)
 				key_string = H.mind.key
-			for(var/datum/objective/O in all_objectives)
+			for(var/datum/objective/O in GLOB.all_objectives)
 				if(O.target == H.mind)
 					obj_count++
 			if(obj_count > 0)
@@ -1066,12 +1078,12 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		message_admins("Admin [key_name_admin(usr)] has disabled ERT calling.", 1)
 
 /client/proc/show_tip()
-	set category = "Admin"
+	set category = "Event"
 	set name = "Show Custom Tip"
 	set desc = "Sends a tip (that you specify) to all players. After all \
 		you're the experienced player here."
 
-	if(!check_rights(R_ADMIN))
+	if(!check_rights(R_EVENT))
 		return
 
 	var/input = input(usr, "Please specify your tip that you want to send to the players.", "Tip", "") as message|null
@@ -1109,3 +1121,47 @@ Traitors and the like can also be revived with the previous role mostly intact.
 		dat += "[S.name] - <a href='?src=[S.UID()];announce=1'>Announce</a> | <a href='?src=[S.UID()];remove=1'>Remove</a><br>"
 	dat += "<br><a href='?src=[UID()];add_station_goal=1'>Add New Goal</a>"
 	usr << browse(dat, "window=goals;size=400x400")
+
+/// Allow admin to add or remove traits of datum
+/datum/admins/proc/modify_traits(datum/D)
+	if(!D)
+		return
+
+	var/add_or_remove = input("Remove/Add?", "Trait Remove/Add") as null|anything in list("Add","Remove")
+	if(!add_or_remove)
+		return
+	var/list/availible_traits = list()
+
+	switch(add_or_remove)
+		if("Add")
+			for(var/key in GLOB.traits_by_type)
+				if(istype(D,key))
+					availible_traits += GLOB.traits_by_type[key]
+		if("Remove")
+			if(!GLOB.trait_name_map)
+				GLOB.trait_name_map = generate_trait_name_map()
+			for(var/trait in D.status_traits)
+				var/name = GLOB.trait_name_map[trait] || trait
+				availible_traits[name] = trait
+
+	var/chosen_trait = input("Select trait to modify", "Trait") as null|anything in availible_traits
+	if(!chosen_trait)
+		return
+	chosen_trait = availible_traits[chosen_trait]
+
+	var/source = "adminabuse"
+	switch(add_or_remove)
+		if("Add") //Not doing source choosing here intentionally to make this bit faster to use, you can always vv it.
+			ADD_TRAIT(D, chosen_trait, source)
+		if("Remove")
+			var/specific = input("All or specific source ?", "Trait Remove/Add") as null|anything in list("All","Specific")
+			if(!specific)
+				return
+			switch(specific)
+				if("All")
+					source = null
+				if("Specific")
+					source = input("Source to be removed","Trait Remove/Add") as null|anything in D.status_traits[chosen_trait]
+					if(!source)
+						return
+			REMOVE_TRAIT(D, chosen_trait, source)

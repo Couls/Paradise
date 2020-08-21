@@ -100,6 +100,9 @@
 			ChangeTurf(Z.turf_type, keep_icon = FALSE)
 		playsound(src, 'sound/weapons/Genhit.ogg', 50, 1)
 
+/turf/simulated/floor/plating/asteroid/welder_act(mob/user, obj/item/I)
+	return
+
 /turf/simulated/floor/plating/asteroid/basalt
 	name = "volcanic floor"
 	baseturf = /turf/simulated/floor/plating/asteroid/basalt
@@ -202,7 +205,7 @@ GLOBAL_LIST_INIT(megafauna_spawn_list, list(/mob/living/simple_animal/hostile/me
 		length = set_length
 
 	// Get our directiosn
-	forward_cave_dir = pick(alldirs - exclude_dir)
+	forward_cave_dir = pick(GLOB.alldirs - exclude_dir)
 	// Get the opposite direction of our facing direction
 	backward_cave_dir = angle2dir(dir2angle(forward_cave_dir) + 180)
 
@@ -224,7 +227,7 @@ GLOBAL_LIST_INIT(megafauna_spawn_list, list(/mob/living/simple_animal/hostile/me
 			break
 
 		var/list/L = list(45)
-		if(IsOdd(dir2angle(dir))) // We're going at an angle and we want thick angled tunnels.
+		if(ISODD(dir2angle(dir))) // We're going at an angle and we want thick angled tunnels.
 			L += -45
 
 		// Expand the edges of our tunnel
@@ -280,21 +283,23 @@ GLOBAL_LIST_INIT(megafauna_spawn_list, list(/mob/living/simple_animal/hostile/me
 				var/maybe_boss = pickweight(megafauna_spawn_list)
 				if(megafauna_spawn_list[maybe_boss])
 					randumb = maybe_boss
-					if(ispath(maybe_boss, /mob/living/simple_animal/hostile/megafauna/bubblegum)) //there can be only one bubblegum, so don't waste spawns on it
-						megafauna_spawn_list.Remove(maybe_boss)
 			else //this is not danger, don't spawn a boss, spawn something else
 				randumb = pickweight(mob_spawn_list)
 
-		for(var/mob/living/simple_animal/hostile/H in urange(12,T)) //prevents mob clumps
-			if((ispath(randumb, /mob/living/simple_animal/hostile/megafauna) || ismegafauna(H)) && get_dist(src, H) <= 7)
+		for(var/thing in urange(12, T)) //prevents mob clumps
+			if(!ishostile(thing) && !istype(thing, /obj/structure/spawner))
+				continue
+			if((ispath(randumb, /mob/living/simple_animal/hostile/megafauna) || ismegafauna(thing)) && get_dist(src, thing) <= 7)
 				return //if there's a megafauna within standard view don't spawn anything at all
-			if(ispath(randumb, /mob/living/simple_animal/hostile/asteroid) || istype(H, /mob/living/simple_animal/hostile/asteroid))
+			if(ispath(randumb, /mob/living/simple_animal/hostile/asteroid) || istype(thing, /mob/living/simple_animal/hostile/asteroid))
 				return //if the random is a standard mob, avoid spawning if there's another one within 12 tiles
-			if((ispath(randumb, /obj/structure/spawner/lavaland) || istype(H, /obj/structure/spawner/lavaland)) && get_dist(src, H) <= 2)
+			if((ispath(randumb, /obj/structure/spawner/lavaland) || istype(thing, /obj/structure/spawner/lavaland)) && get_dist(src, thing) <= 2)
 				return //prevents tendrils spawning in each other's collapse range
 
+		if(ispath(randumb, /mob/living/simple_animal/hostile/megafauna/bubblegum)) //there can be only one bubblegum, so don't waste spawns on it
+			megafauna_spawn_list.Remove(randumb)
+
 		new randumb(T)
-	return
 
 #undef SPAWN_MEGAFAUNA
 #undef SPAWN_BUBBLEGUM

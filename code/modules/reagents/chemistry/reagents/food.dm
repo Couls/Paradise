@@ -16,7 +16,7 @@
 		if(ishuman(M))
 			var/mob/living/carbon/human/H = M
 			if(H.can_eat(diet_flags))	//Make sure the species has it's dietflag set, otherwise it can't digest any nutrients
-				H.nutrition += nutriment_factor	// For hunger and fatness
+				H.adjust_nutrition(nutriment_factor)	// For hunger and fatness
 	return ..()
 
 /datum/reagent/consumable/nutriment		// Pure nutriment, universally digestable and thus slightly less effective
@@ -149,6 +149,10 @@
 	description = "This is what makes chilis hot."
 	reagent_state = LIQUID
 	color = "#B31008" // rgb: 179, 16, 8
+	addiction_chance = 1
+	addiction_chance_additional = 10
+	addiction_threshold = 2
+	minor_addiction = TRUE
 	taste_description = "<span class='warning'>HOTNESS</span>"
 	taste_mult = 1.5
 
@@ -187,8 +191,8 @@
 		M.visible_message("<span class='warning'>[M] [pick("dry heaves!","coughs!","splutters!")]</span>")
 	return ..()
 
-/datum/reagent/consumable/condensedcapsaicin/reaction_mob(mob/living/M, method=TOUCH, volume)
-	if(method == TOUCH)
+/datum/reagent/consumable/condensedcapsaicin/reaction_mob(mob/living/M, method=REAGENT_TOUCH, volume)
+	if(method == REAGENT_TOUCH)
 		if(ishuman(M))
 			var/mob/living/carbon/human/victim = M
 			var/mouth_covered = 0
@@ -279,8 +283,8 @@
 
 /datum/reagent/consumable/frostoil/reaction_turf(turf/T, volume)
 	if(volume >= 5)
-		for(var/mob/living/carbon/slime/M in T)
-			M.adjustToxLoss(rand(15,30))
+		for(var/mob/living/simple_animal/slime/M in T)
+			M.adjustToxLoss(rand(15, 30))
 
 /datum/reagent/consumable/sodiumchloride
 	name = "Salt"
@@ -372,7 +376,7 @@
 
 /datum/reagent/consumable/sprinkles/on_mob_life(mob/living/M)
 	var/update_flags = STATUS_UPDATE_NONE
-	if(ishuman(M) && M.job in list("Security Officer", "Security Pod Pilot", "Detective", "Warden", "Head of Security", "Brig Physician", "Internal Affairs Agent", "Magistrate"))
+	if(ishuman(M) && (M.job in list("Security Officer", "Security Pod Pilot", "Detective", "Warden", "Head of Security", "Brig Physician", "Internal Affairs Agent", "Magistrate")))
 		update_flags |= M.adjustBruteLoss(-1, FALSE)
 		update_flags |= M.adjustFireLoss(-1, FALSE)
 	return ..() | update_flags
@@ -548,8 +552,8 @@
 	color = "#c0c9a0"
 	taste_description = "pungency"
 
-/datum/reagent/consumable/onion/reaction_mob(mob/living/M, method = TOUCH, volume)
-	if(method == TOUCH)
+/datum/reagent/consumable/onion/reaction_mob(mob/living/M, method = REAGENT_TOUCH, volume)
+	if(method == REAGENT_TOUCH)
 		if(!M.is_mouth_covered() && !M.is_eyes_covered())
 			if(!M.get_organ_slot("eyes"))	//can't blind somebody with no eyes
 				to_chat(M, "<span class = 'notice'>Your eye sockets feel wet.</span>")
@@ -651,6 +655,10 @@
 	reagent_state = LIQUID
 	color = "#B2B139"
 	overdose_threshold = 50
+	addiction_chance = 2
+	addiction_chance_additional = 10
+	addiction_threshold = 5
+	minor_addiction = TRUE
 	harmless = FALSE
 	taste_description = "cheese?"
 
@@ -667,7 +675,10 @@
 	description = "Hell, I don't even know if this IS cheese. Whatever it is, it ain't normal. If you want to, pour it out to make it solid."
 	reagent_state = SOLID
 	color = "#50FF00"
-	addiction_chance = 5
+	addiction_chance = 1
+	addiction_chance_additional = 10
+	addiction_threshold = 5
+	minor_addiction = TRUE
 	taste_description = "cheeeeeese...?"
 
 /datum/reagent/consumable/weird_cheese/on_mob_life(mob/living/M)
@@ -806,8 +817,8 @@
 	color = "#AC7E67"
 	taste_description = "pepperoni"
 
-/datum/reagent/consumable/pepperoni/reaction_mob(mob/living/M, method=TOUCH, volume)
-	if(method == TOUCH)
+/datum/reagent/consumable/pepperoni/reaction_mob(mob/living/M, method=REAGENT_TOUCH, volume)
+	if(method == REAGENT_TOUCH)
 		if(ishuman(M))
 			var/mob/living/carbon/human/H = M
 
@@ -838,13 +849,16 @@
 	color = "#63DE63"
 	taste_description = "burned food"
 
-/datum/reagent/questionmark/reaction_mob(mob/living/M, method=TOUCH, volume)
-	if(method == INGEST)
-		M.Stun(2, FALSE)
-		M.Weaken(2, FALSE)
-		M.update_canmove()
-		to_chat(M, "<span class='danger'>Ugh! Eating that was a terrible idea!</span>")
-		M.ForceContractDisease(new /datum/disease/food_poisoning(0))
+/datum/reagent/questionmark/reaction_mob(mob/living/carbon/human/H, method = REAGENT_TOUCH, volume)
+	if(istype(H) && method == REAGENT_INGEST)
+		if(H.dna.species.taste_sensitivity < TASTE_SENSITIVITY_NO_TASTE) // If you can taste it, then you know how awful it is.
+			H.Stun(2, FALSE)
+			H.Weaken(2, FALSE)
+			H.update_canmove()
+			to_chat(H, "<span class='danger'>Ugh! Eating that was a terrible idea!</span>")
+		if(NO_HUNGER in H.dna.species.species_traits) //If you don't eat, then you can't get food poisoning
+			return
+		H.ForceContractDisease(new /datum/disease/food_poisoning(0))
 
 /datum/reagent/msg
 	name = "Monosodium glutamate"
@@ -898,8 +912,8 @@
 	color = "#C87D28"
 	taste_description = "mold"
 
-/datum/reagent/fungus/reaction_mob(mob/living/M, method=TOUCH, volume)
-	if(method == INGEST)
+/datum/reagent/fungus/reaction_mob(mob/living/M, method=REAGENT_TOUCH, volume)
+	if(method == REAGENT_INGEST)
 		var/ranchance = rand(1,10)
 		if(ranchance == 1)
 			to_chat(M, "<span class='warning'>You feel very sick.</span>")
@@ -925,8 +939,8 @@
 		to_chat(M, "<span class='warning'>[spooky_message]</span>")
 	return ..()
 
-/datum/reagent/ectoplasm/reaction_mob(mob/living/M, method=TOUCH, volume)
-	if(method == INGEST)
+/datum/reagent/ectoplasm/reaction_mob(mob/living/M, method=REAGENT_TOUCH, volume)
+	if(method == REAGENT_INGEST)
 		var/spooky_eat = pick("Ugh, why did you eat that? Your mouth feels haunted. Haunted with bad flavors.", "Ugh, why did you eat that? It has the texture of ham aspic.  From the 1950s.  Left out in the sun.", "Ugh, why did you eat that? It tastes like a ghost fart.", "Ugh, why did you eat that? It tastes like flavor died.")
 		to_chat(M, "<span class='warning'>[spooky_eat]</span>")
 

@@ -28,8 +28,9 @@
 	max_combined_w_class = 14
 
 /obj/item/storage/secure/examine(mob/user)
-	if(..(user, 1))
-		to_chat(user, text("The service panel is [open ? "open" : "closed"]."))
+	. = ..()
+	if(in_range(user, src))
+		. += "The service panel is [open ? "open" : "closed"]."
 
 /obj/item/storage/secure/attackby(obj/item/W as obj, mob/user as mob, params)
 	if(locked)
@@ -82,13 +83,22 @@
 			to_chat(user, "You short out the lock on [src].")
 		return
 
+/obj/item/storage/secure/AltClick(mob/user)
+	if(!try_to_open())
+		return FALSE
+	return ..()
 
 /obj/item/storage/secure/MouseDrop(over_object, src_location, over_location)
+	if(!try_to_open())
+		return FALSE
+	return ..()
+
+/obj/item/storage/secure/proc/try_to_open()
 	if(locked)
 		add_fingerprint(usr)
 		to_chat(usr, "<span class='warning'>It's locked!</span>")
-		return 0
-	..()
+		return FALSE
+	return TRUE
 
 /obj/item/storage/secure/attack_self(mob/user as mob)
 	user.set_machine(src)

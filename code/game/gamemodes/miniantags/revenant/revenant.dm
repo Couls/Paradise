@@ -16,6 +16,7 @@
 	var/icon_stun = "revenant_stun"
 	var/icon_drain = "revenant_draining"
 	incorporeal_move = 3
+	see_invisible = INVISIBILITY_REVENANT
 	invisibility = INVISIBILITY_REVENANT
 	health =  INFINITY //Revenants don't use health, they use essence instead
 	maxHealth =  INFINITY
@@ -76,8 +77,8 @@
 /mob/living/simple_animal/revenant/ex_act(severity)
 	return 1 //Immune to the effects of explosions.
 
-/mob/living/simple_animal/revenant/blob_act()
-	return 1 //blah blah blobs aren't in tune with the spirit world, or something.
+/mob/living/simple_animal/revenant/blob_act(obj/structure/blob/B)
+	return //blah blah blobs aren't in tune with the spirit world, or something.
 
 /mob/living/simple_animal/revenant/singularity_act()
 	return //don't walk into the singularity expecting to find corpses, okay?
@@ -140,7 +141,7 @@
 		giveObjectivesandGoals()
 		giveSpells()
 	else
-		var/list/mob/dead/observer/candidates = pollCandidates("Do you want to play as a revenant?", poll_time = 15 SECONDS)
+		var/list/mob/dead/observer/candidates = SSghost_spawns.poll_candidates("Do you want to play as a revenant?", poll_time = 15 SECONDS, source = /mob/living/simple_animal/revenant)
 		var/mob/dead/observer/theghost = null
 		if(candidates.len)
 			theghost = pick(candidates)
@@ -162,7 +163,7 @@
 			to_chat(src, "<b>You are invincible and invisible to everyone but other ghosts. Most abilities will reveal you, rendering you vulnerable.</b>")
 			to_chat(src, "<b>To function, you are to drain the life essence from humans. This essence is a resource, as well as your health, and will power all of your abilities.</b>")
 			to_chat(src, "<b><i>You do not remember anything of your past lives, nor will you remember anything about this one after your death.</i></b>")
-			to_chat(src, "<b>Be sure to read the wiki page at http://nanotrasen.se/wiki/index.php/Revenant to learn more.</b>")
+			to_chat(src, "<b>Be sure to read the wiki page at http://www.paradisestation.org/wiki/index.php/Revenant to learn more.</b>")
 			var/datum/objective/revenant/objective = new
 			objective.owner = mind
 			mind.objectives += objective
@@ -374,11 +375,11 @@
 	qdel(src)
 
 /obj/item/ectoplasm/revenant/examine(mob/user)
-	..(user)
+	. = ..()
 	if(inert)
-		to_chat(user, "<span class='revennotice'>It seems inert.</span>")
+		. += "<span class='revennotice'>It seems inert.</span>"
 	else if(reforming)
-		to_chat(user, "<span class='revenwarning'>It is shifting and distorted. It would be wise to destroy this.</span>")
+		. += "<span class='revenwarning'>It is shifting and distorted. It would be wise to destroy this.</span>"
 
 /obj/item/ectoplasm/revenant/proc/reform()
 	if(inert || !src)
@@ -396,7 +397,7 @@
 	spawn()
 		if(!key_of_revenant)
 			message_admins("The new revenant's old client either could not be found or is in a new, living mob - grabbing a random candidate instead...")
-			var/list/candidates = pollCandidates("Do you want to play as a revenant?", ROLE_REVENANT, 1)
+			var/list/candidates = SSghost_spawns.poll_candidates("Do you want to play as a revenant?", ROLE_REVENANT, TRUE, source = /mob/living/simple_animal/revenant)
 			if(!candidates.len)
 				qdel(R)
 				message_admins("No candidates were found for the new revenant. Oh well!")

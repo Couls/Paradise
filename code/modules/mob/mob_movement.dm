@@ -8,13 +8,13 @@
 	if(mover.checkpass(PASSMOB))
 		return 1
 	if(buckled == mover)
-		return 1
+		return TRUE
 	if(ismob(mover))
 		var/mob/moving_mob = mover
 		if((other_mobs && moving_mob.other_mobs))
-			return 1
-		if(mover == buckled_mob)
-			return 1
+			return TRUE
+		if(mover in buckled_mobs)
+			return TRUE
 	return (!mover.density || !density || lying)
 
 
@@ -25,25 +25,6 @@
 		C.toggle_throw_mode()
 	else
 		to_chat(usr, "<span class='danger'>This mob type cannot throw items.</span>")
-
-
-/client/verb/drop_item()
-	set hidden = 1
-	if(!isrobot(mob))
-		mob.drop_item_v()
-	return
-
-
-/* /client/Center()
-	/* No 3D movement in 2D spessman game. dir 16 is Z Up
-	if(isobj(mob.loc))
-		var/obj/O = mob.loc
-		if(mob.canmove)
-			return O.relaymove(mob, 16)
-	*/
-	return
- */
-
 
 /client/proc/Move_object(direct)
 	if(mob && mob.control_object)
@@ -143,8 +124,10 @@
 		move_delay = world.time
 	mob.last_movement = world.time
 
+	delay = TICKS2DS(-round(-(DS2TICKS(delay)))) //Rounded to the next tick in equivalent ds
+
 	if(locate(/obj/item/grab, mob))
-		move_delay = max(move_delay, world.time + 7)
+		delay += 7
 		var/list/L = mob.ret_grab()
 		if(istype(L, /list))
 			if(L.len == 2)
@@ -153,14 +136,14 @@
 				if(M)
 					if((get_dist(mob, M) <= 1 || M.loc == mob.loc))
 						var/turf/prev_loc = mob.loc
-						. = ..()
+						. = mob.SelfMove(n, direct, delay)
 						if(M && isturf(M.loc)) // Mob may get deleted during parent call
 							var/diag = get_dir(mob, M)
 							if((diag - 1) & diag)
 							else
 								diag = null
 							if((get_dist(mob, M) > 1 || diag))
-								step(M, get_dir(M.loc, prev_loc))
+								M.Move(prev_loc, get_dir(M.loc, prev_loc), delay)
 			else
 				for(var/mob/M in L)
 					M.other_mobs = 1
@@ -168,17 +151,15 @@
 						M.animate_movement = 3
 				for(var/mob/M in L)
 					spawn(0)
-						step(M, direct)
-						return
+						M.Move(get_step(M,direct), direct, delay)
 					spawn(1)
 						M.other_mobs = null
 						M.animate_movement = 2
-						return
 
 	else if(mob.confused)
 		var/newdir = 0
 		if(mob.confused > 40)
-			newdir = pick(alldirs)
+			newdir = pick(GLOB.alldirs)
 		else if(prob(mob.confused * 1.5))
 			newdir = angle2dir(dir2angle(direct) + pick(90, -90))
 		else if(prob(mob.confused * 3))
@@ -187,8 +168,13 @@
 			direct = newdir
 			n = get_step(mob, direct)
 
-	. = ..()
+	. = mob.SelfMove(n, direct, delay)
 	mob.setDir(direct)
+
+	if((direct & (direct - 1)) && mob.loc == n) //moved diagonally successfully
+		delay = mob.movement_delay() * 2 //Will prevent mob diagonal moves from smoothing accurately, sadly
+
+	move_delay += delay
 
 	for(var/obj/item/grab/G in mob)
 		if(G.state == GRAB_NECK)
@@ -196,9 +182,7 @@
 		G.adjust_position()
 	for(var/obj/item/grab/G in mob.grabbed_by)
 		G.adjust_position()
-	if((direct & (direct - 1)) && mob.loc == n) //moved diagonally successfully
-		delay = mob.movement_delay() * 2
-	move_delay += delay
+
 	moving = 0
 	if(mob && .)
 		if(mob.throwing)
@@ -208,8 +192,8 @@
 		O.on_mob_move(direct, mob)
 
 
-
-
+/mob/proc/SelfMove(turf/n, direct, movetime)
+	return Move(n, direct, movetime)
 
 ///Process_Grab()
 ///Called by client/Move()
@@ -362,10 +346,14 @@
 /mob/proc/Move_Pulled(atom/A)
 	if(!canmove || restrained() || !pulling)
 		return
-	if(pulling.anchored)
+	if(pulling.anchored || pulling.move_resist > move_force || !pulling.Adjacent(src))
+		stop_pulling()
 		return
-	if(!pulling.Adjacent(src))
-		return
+	if(isliving(pulling))
+		var/mob/living/L = pulling
+		if(L.buckled && L.buckled.buckle_prevents_pull) //if they're buckled to something that disallows pulling, prevent it
+			stop_pulling()
+			return
 	if(A == loc && pulling.density)
 		return
 	if(!Process_Spacemove(get_dir(pulling.loc, A)))
@@ -384,7 +372,7 @@
 /mob/proc/update_gravity()
 	return
 /client/proc/check_has_body_select()
-	return mob && mob.hud_used && mob.zone_sel && istype(mob.zone_sel, /obj/screen/zone_sel)
+	return mob && mob.hud_used && mob.hud_used.zone_select && istype(mob.hud_used.zone_select, /obj/screen/zone_sel)
 
 /client/verb/body_toggle_head()
 	set name = "body-toggle-head"
@@ -394,7 +382,7 @@
 		return
 
 	var/next_in_line
-	switch(mob.zone_sel.selecting)
+	switch(mob.zone_selected)
 		if(BODY_ZONE_HEAD)
 			next_in_line = BODY_ZONE_PRECISE_EYES
 		if(BODY_ZONE_PRECISE_EYES)
@@ -402,7 +390,7 @@
 		else
 			next_in_line = BODY_ZONE_HEAD
 
-	var/obj/screen/zone_sel/selector = mob.zone_sel
+	var/obj/screen/zone_sel/selector = mob.hud_used.zone_select
 	selector.set_selected_zone(next_in_line, mob)
 
 /client/verb/body_r_arm()
@@ -412,12 +400,12 @@
 		return
 
 	var/next_in_line
-	if(mob.zone_sel.selecting == BODY_ZONE_R_ARM)
+	if(mob.zone_selected == BODY_ZONE_R_ARM)
 		next_in_line = BODY_ZONE_PRECISE_R_HAND
 	else
 		next_in_line = BODY_ZONE_R_ARM
 
-	var/obj/screen/zone_sel/selector = mob.zone_sel
+	var/obj/screen/zone_sel/selector = mob.hud_used.zone_select
 	selector.set_selected_zone(next_in_line, mob)
 
 /client/verb/body_chest()
@@ -427,23 +415,23 @@
 	if(!check_has_body_select())
 		return
 
-	var/obj/screen/zone_sel/selector = mob.zone_sel
+	var/obj/screen/zone_sel/selector = mob.hud_used.zone_select
 	selector.set_selected_zone(BODY_ZONE_CHEST, mob)
 
 /client/verb/body_l_arm()
 	set name = "body-l-arm"
 	set hidden = 1
-	
+
 	if(!check_has_body_select())
 		return
-		
+
 	var/next_in_line
-	if(mob.zone_sel.selecting == BODY_ZONE_L_ARM)
+	if(mob.zone_selected == BODY_ZONE_L_ARM)
 		next_in_line = BODY_ZONE_PRECISE_L_HAND
 	else
 		next_in_line = BODY_ZONE_L_ARM
 
-	var/obj/screen/zone_sel/selector = mob.zone_sel
+	var/obj/screen/zone_sel/selector = mob.hud_used.zone_select
 	selector.set_selected_zone(next_in_line, mob)
 
 /client/verb/body_r_leg()
@@ -452,14 +440,14 @@
 
 	if(!check_has_body_select())
 		return
-		
+
 	var/next_in_line
-	if(mob.zone_sel.selecting == BODY_ZONE_R_LEG)
+	if(mob.zone_selected == BODY_ZONE_R_LEG)
 		next_in_line = BODY_ZONE_PRECISE_R_FOOT
 	else
 		next_in_line = BODY_ZONE_R_LEG
 
-	var/obj/screen/zone_sel/selector = mob.zone_sel
+	var/obj/screen/zone_sel/selector = mob.hud_used.zone_select
 	selector.set_selected_zone(next_in_line, mob)
 
 /client/verb/body_groin()
@@ -469,7 +457,7 @@
 	if(!check_has_body_select())
 		return
 
-	var/obj/screen/zone_sel/selector = mob.zone_sel
+	var/obj/screen/zone_sel/selector = mob.hud_used.zone_select
 	selector.set_selected_zone(BODY_ZONE_PRECISE_GROIN, mob)
 
 /client/verb/body_l_leg()
@@ -478,14 +466,14 @@
 
 	if(!check_has_body_select())
 		return
-		
+
 	var/next_in_line
-	if(mob.zone_sel.selecting == BODY_ZONE_L_LEG)
+	if(mob.zone_selected == BODY_ZONE_L_LEG)
 		next_in_line = BODY_ZONE_PRECISE_L_FOOT
 	else
 		next_in_line = BODY_ZONE_L_LEG
 
-	var/obj/screen/zone_sel/selector = mob.zone_sel
+	var/obj/screen/zone_sel/selector = mob.hud_used.zone_select
 	selector.set_selected_zone(next_in_line, mob)
 
 /client/verb/toggle_walk_run()

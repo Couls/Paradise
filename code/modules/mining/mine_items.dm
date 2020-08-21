@@ -5,7 +5,6 @@
 	name = "Light emitter"
 	anchored = TRUE
 	invisibility = 101
-	unacidable = TRUE
 	var/set_luminosity = 8
 	var/set_cap = 0
 
@@ -50,7 +49,7 @@
 	icon_opened = "miningsecopen"
 	icon_broken = "miningsecbroken"
 	icon_off = "miningsecoff"
-	req_access = list(access_mining)
+	req_access = list(ACCESS_MINING)
 
 /obj/structure/closet/secure_closet/miner/New()
 	..()

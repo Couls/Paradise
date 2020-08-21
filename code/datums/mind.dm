@@ -39,7 +39,6 @@
 	var/role_alt_title
 
 	var/datum/job/assigned_job
-	var/list/kills = list()
 	var/list/datum/objective/objectives = list()
 	var/list/datum/objective/special_verbs = list()
 	var/list/targets = list()
@@ -48,30 +47,23 @@
 
 	var/miming = 0 // Mime's vow of silence
 	var/list/antag_datums
-	var/speech_span // What span any body this mind has talks in.
-	var/datum/faction/faction 			//associated faction
 	var/datum/changeling/changeling		//changeling holder
 	var/linglink
 	var/datum/vampire/vampire			//vampire holder
 	var/datum/abductor/abductor			//abductor holder
-	var/datum/devilinfo/devilinfo 		//devil holder
 
 	var/antag_hud_icon_state = null //this mind's ANTAG_HUD should have this icon_state
 	var/datum/atom_hud/antag/antag_hud = null //this mind's antag HUD
 	var/datum/mindslaves/som //stands for slave or master...hush..
 	var/datum/devilinfo/devilinfo //Information about the devil, if any.
- 	var/damnation_type = 0
- 	var/datum/mind/soulOwner //who owns the soul.  Under normal circumstances, this will point to src
+	var/damnation_type = 0
+	var/datum/mind/soulOwner //who owns the soul.  Under normal circumstances, this will point to src
 	var/hasSoul = TRUE
-
-	var/rev_cooldown = 0
 
 	var/isholy = FALSE // is this person a chaplain or admin role allowed to use bibles
 	var/isblessed = FALSE // is this person blessed by a chaplain?
 	var/num_blessed = 0 // for prayers
 
-	// the world.time since the mob has been brigged, or -1 if not at all
-	var/brigged_since = -1
 	var/suicided = FALSE
 
 	//put this here for easier tracking ingame
@@ -94,6 +86,9 @@
 			if(antag_datum.delete_on_mind_deletion)
 				qdel(i)
 		antag_datums = null
+	current = null
+	original = null
+	soulOwner = null
 	return ..()
 
 /datum/mind/proc/transfer_to(mob/living/new_character)
@@ -132,11 +127,17 @@
 	var/output = "<B>[current.real_name]'s Memories:</B><HR>"
 	output += memory
 
-	if(objectives.len)
+	var/antag_datum_objectives = FALSE
+	for(var/datum/antagonist/A in antag_datums)
+		output += A.antag_memory
+		if(!antag_datum_objectives && LAZYLEN(A.objectives))
+			antag_datum_objectives = TRUE
+
+	if(LAZYLEN(objectives) || antag_datum_objectives)
 		output += "<HR><B>Objectives:</B><BR>"
 		output += gen_objective_text()
 
-	if(job_objectives.len)
+	if(LAZYLEN(job_objectives))
 		output += "<HR><B>Job Objectives:</B><UL>"
 
 		var/obj_count = 1
@@ -152,8 +153,16 @@
 /datum/mind/proc/gen_objective_text(admin = FALSE)
 	. = ""
 	var/obj_count = 1
+	var/list/all_objectives = list()
+	for(var/datum/antagonist/A in antag_datums)
+		all_objectives |= A.objectives
+
+	if(LAZYLEN(all_objectives))
+		for(var/datum/objective/objective in all_objectives)
+			. += "<br><B>Objective #[obj_count++]</B>: [objective.explanation_text]"
+
 	for(var/datum/objective/objective in objectives)
-		. += "<b>Objective #[obj_count]</b>: [objective.explanation_text]"
+		. += "<b>Objective #[obj_count++]</b>: [objective.explanation_text]"
 		if(admin)
 			. += " <a href='?src=[UID()];obj_edit=\ref[objective]'>Edit</a> " // Edit
 			. += "<a href='?src=[UID()];obj_delete=\ref[objective]'>Delete</a> " // Delete
@@ -162,7 +171,6 @@
 			. += "<font color=[objective.completed ? "green" : "red"]>Toggle Completion</font>"
 			. += "</a>"
 		. += "<br>"
-		obj_count++
 
 /datum/mind/proc/_memory_edit_header(gamemode, list/alt)
 	. = gamemode
@@ -212,9 +220,7 @@
 
 /datum/mind/proc/memory_edit_cult(mob/living/carbon/human/H)
 	. = _memory_edit_header("cult")
-	if(ismindshielded(H))
-		. += "<B>NO</B>|cultist"
-	else if(src in SSticker.mode.cult)
+	if(src in SSticker.mode.cult)
 		. += "<a href='?src=[UID()];cult=clear'>no</a>|<b><font color='red'>CULTIST</font></b>"
 		. += "<br>Give <a href='?src=[UID()];cult=tome'>tome</a>|<a href='?src=[UID()];cult=equip'>equip</a>."
 	else
@@ -327,14 +333,20 @@
 
 /datum/mind/proc/memory_edit_traitor()
 	. = _memory_edit_header("traitor", list("traitorchan", "traitorvamp"))
-	if(src in SSticker.mode.traitors)
+	if(has_antag_datum(/datum/antagonist/traitor))
 		. += "<b><font color='red'>TRAITOR</font></b>|<a href='?src=[UID()];traitor=clear'>no</a>"
 		if(objectives.len==0)
-			. += "<br>Objectives are empty! <a href='?src=[UID()];traitor=autoobjectives'>Randomize</a>!"
+			. += "<br>Objectives are empty! <a href='?src=[UID()];traitor=autoobjectives'>Randomize!</a>"
 	else
 		. += "<a href='?src=[UID()];traitor=traitor'>traitor</a>|<b>NO</b>"
 
 	. += _memory_edit_role_enabled(ROLE_TRAITOR)
+	// Mindslave
+	. += "<br><b><i>mindslaved</i></b>: "
+	if(has_antag_datum(/datum/antagonist/mindslave))
+		. += "<b><font color='red'>MINDSLAVE</font></b>|<a href='?src=[UID()];mindslave=clear'>no</a>"
+	else
+		. += "mindslave|<b>NO</b>"
 
 /datum/mind/proc/memory_edit_silicon()
 	. = "<i><b>Silicon</b></i>: "
@@ -352,7 +364,7 @@
 /datum/mind/proc/memory_edit_uplink()
 	. = ""
 	if(ishuman(current) && ((src in SSticker.mode.head_revolutionaries) || \
-		(src in SSticker.mode.traitors) || \
+		(has_antag_datum(/datum/antagonist/traitor)) || \
 		(src in SSticker.mode.syndicates)))
 		. = "Uplink: <a href='?src=[UID()];common=uplink'>give</a>"
 		var/obj/item/uplink/hidden/suplink = find_syndicate_uplink()
@@ -522,13 +534,22 @@
 				var/mob/def_target = null
 				var/objective_list[] = list(/datum/objective/assassinate, /datum/objective/protect, /datum/objective/debrain)
 				if(objective&&(objective.type in objective_list) && objective:target)
-					def_target = objective:target.current
+					def_target = objective.target.current
 				possible_targets = sortAtom(possible_targets)
-				possible_targets += "Free objective"
 
-				var/new_target = input("Select target:", "Objective target", def_target) as null|anything in possible_targets
-				if(!new_target)
-					return
+				var/new_target
+				if(length(possible_targets) > 0)
+					if(alert(usr, "Do you want to pick the objective yourself? No will randomise it", "Pick objective", "Yes", "No") == "Yes")
+						possible_targets += "Free objective"
+						new_target = input("Select target:", "Objective target", def_target) as null|anything in possible_targets
+					else
+						new_target = pick(possible_targets)
+
+					if(!new_target)
+						return
+				else
+					to_chat(usr, "<span class='warning'>No possible target found. Defaulting to a Free objective.</span>")
+					new_target = "Free objective"
 
 				var/objective_path = text2path("/datum/objective/[new_obj_type]")
 				if(new_target == "Free objective")
@@ -803,7 +824,8 @@
 				qdel(flash)
 				take_uplink()
 				var/fail = 0
-				fail |= !SSticker.mode.equip_traitor(current, 1)
+				var/datum/antagonist/traitor/T = has_antag_datum(/datum/antagonist/traitor)
+				fail |= !T.equip_traitor(src)
 				fail |= !SSticker.mode.equip_revolutionary(current)
 				if(fail)
 					to_chat(usr, "<span class='warning'>Reequipping revolutionary goes wrong!</span>")
@@ -827,11 +849,11 @@
 					to_chat(current, "<span class='cultitalic'>Assist your new compatriots in their dark dealings. Their goal is yours, and yours is theirs. You serve [SSticker.cultdat.entity_title2] above all else. Bring It back.</span>")
 					log_admin("[key_name(usr)] has culted [key_name(current)]")
 					message_admins("[key_name_admin(usr)] has culted [key_name_admin(current)]")
-					if(!summon_spots.len)
-						while(summon_spots.len < SUMMON_POSSIBILITIES)
-							var/area/summon = pick(return_sorted_areas() - summon_spots)
+					if(!GLOB.summon_spots.len)
+						while(GLOB.summon_spots.len < SUMMON_POSSIBILITIES)
+							var/area/summon = pick(return_sorted_areas() - GLOB.summon_spots)
 							if(summon && is_station_level(summon.z) && summon.valid_territory)
-								summon_spots += summon
+								GLOB.summon_spots += summon
 			if("tome")
 				var/mob/living/carbon/human/H = current
 				if(istype(H))
@@ -884,7 +906,7 @@
 					log_admin("[key_name(usr)] has wizarded [key_name(current)]")
 					message_admins("[key_name_admin(usr)] has wizarded [key_name_admin(current)]")
 			if("lair")
-				current.forceMove(pick(wizardstart))
+				current.forceMove(pick(GLOB.wizardstart))
 				log_admin("[key_name(usr)] has moved [key_name(current)] to the wizard's lair")
 				message_admins("[key_name_admin(usr)] has moved [key_name_admin(current)] to the wizard's lair")
 			if("dressup")
@@ -1142,45 +1164,40 @@
 	else if(href_list["traitor"])
 		switch(href_list["traitor"])
 			if("clear")
-				if(src in SSticker.mode.traitors)
-					SSticker.mode.traitors -= src
-					special_role = null
+				if(has_antag_datum(/datum/antagonist/traitor))
 					to_chat(current, "<span class='warning'><FONT size = 3><B>You have been brainwashed! You are no longer a traitor!</B></FONT></span>")
+					remove_antag_datum(/datum/antagonist/traitor)
 					log_admin("[key_name(usr)] has de-traitored [key_name(current)]")
 					message_admins("[key_name_admin(usr)] has de-traitored [key_name_admin(current)]")
-					if(isAI(current))
-						var/mob/living/silicon/ai/A = current
-						A.set_zeroth_law("")
-						A.show_laws()
-						A.verbs -= /mob/living/silicon/ai/proc/choose_modules
-						A.malf_picker.remove_malf_verbs(A)
-						qdel(A.malf_picker)
-					SSticker.mode.update_traitor_icons_removed(src)
-
 
 			if("traitor")
-				if(!(src in SSticker.mode.traitors))
-					SSticker.mode.traitors += src
-					var/datum/mindslaves/slaved = new()
-					slaved.masters += src
-					som = slaved //we MIGT want to mindslave someone
-					special_role = SPECIAL_ROLE_TRAITOR
-					to_chat(current, "<span class='danger'>You are a traitor!</span>")
+				if(!(has_antag_datum(/datum/antagonist/traitor)))
+					var/datum/antagonist/traitor/T = new()
+					T.give_objectives = FALSE
+					T.should_equip = FALSE
+					add_antag_datum(T)
 					log_admin("[key_name(usr)] has traitored [key_name(current)]")
 					message_admins("[key_name_admin(usr)] has traitored [key_name_admin(current)]")
-					if(isAI(current))
-						var/mob/living/silicon/ai/A = current
-						SSticker.mode.add_law_zero(A)
-						SEND_SOUND(current, 'sound/ambience/antag/malf.ogg')
-					else
-						SEND_SOUND(current, 'sound/ambience/antag/tatoralert.ogg')
-					SSticker.mode.update_traitor_icons_added(src)
 
 			if("autoobjectives")
-				SSticker.mode.forge_traitor_objectives(src)
+				var/datum/antagonist/traitor/T = has_antag_datum(/datum/antagonist/traitor)
+				T.forge_traitor_objectives(src)
 				to_chat(usr, "<span class='notice'>The objectives for traitor [key] have been generated. You can edit them and announce manually.</span>")
 				log_admin("[key_name(usr)] has automatically forged objectives for [key_name(current)]")
 				message_admins("[key_name_admin(usr)] has automatically forged objectives for [key_name_admin(current)]")
+
+	else if(href_list["mindslave"])
+		switch(href_list["mindslave"])
+			if("clear")
+				if(has_antag_datum(/datum/antagonist/mindslave))
+					var/mob/living/carbon/human/H = current
+					for(var/i in H.contents)
+						if(istype(i, /obj/item/implant/traitor))
+							qdel(i)
+							break
+					remove_antag_datum(/datum/antagonist/mindslave)
+					log_admin("[key_name(usr)] has de-mindslaved [key_name(current)]")
+					message_admins("[key_name_admin(usr)] has de-mindslaved [key_name_admin(current)]")
 
 	else if(href_list["shadowling"])
 		switch(href_list["shadowling"])
@@ -1251,17 +1268,20 @@
 				var/mob/living/silicon/robot/R = current
 				if(istype(R))
 					R.emagged = 0
-					if(R.activated(R.module.emag))
-						R.module_active = null
-					if(R.module_state_1 == R.module.emag)
-						R.module_state_1 = null
-						R.contents -= R.module.emag
-					else if(R.module_state_2 == R.module.emag)
-						R.module_state_2 = null
-						R.contents -= R.module.emag
-					else if(R.module_state_3 == R.module.emag)
-						R.module_state_3 = null
-						R.contents -= R.module.emag
+					if(R.module)
+						if(R.activated(R.module.emag))
+							R.module_active = null
+						if(R.module_state_1 == R.module.emag)
+							R.module_state_1 = null
+							R.contents -= R.module.emag
+						else if(R.module_state_2 == R.module.emag)
+							R.module_state_2 = null
+							R.contents -= R.module.emag
+						else if(R.module_state_3 == R.module.emag)
+							R.module_state_3 = null
+							R.contents -= R.module.emag
+					R.clear_supplied_laws()
+					R.laws = new /datum/ai_laws/crewsimov
 					log_admin("[key_name(usr)] has un-emagged [key_name(current)]")
 					message_admins("[key_name_admin(usr)] has un-emagged [key_name_admin(current)]")
 
@@ -1282,6 +1302,8 @@
 							else if(R.module_state_3 == R.module.emag)
 								R.module_state_3 = null
 								R.contents -= R.module.emag
+						R.clear_supplied_laws()
+						R.laws = new /datum/ai_laws/crewsimov
 					log_admin("[key_name(usr)] has unemagged [key_name(ai)]'s cyborgs")
 					message_admins("[key_name_admin(usr)] has unemagged [key_name_admin(ai)]'s cyborgs")
 
@@ -1300,7 +1322,8 @@
 				message_admins("[key_name_admin(usr)] has unequipped [key_name_admin(current)]")
 			if("takeuplink")
 				take_uplink()
-				memory = null//Remove any memory they may have had.
+				var/datum/antagonist/traitor/T = has_antag_datum(/datum/antagonist/traitor)
+				T.antag_memory = "" //Remove any antag memory they may have had (uplink codes, code phrases)
 				log_admin("[key_name(usr)] has taken [key_name(current)]'s uplink")
 				message_admins("[key_name_admin(usr)] has taken [key_name_admin(current)]'s uplink")
 			if("crystals")
@@ -1316,9 +1339,12 @@
 							log_admin("[key_name(usr)] has set [key_name(current)]'s telecrystals to [crystals]")
 							message_admins("[key_name_admin(usr)] has set [key_name_admin(current)]'s telecrystals to [crystals]")
 			if("uplink")
-				if(!SSticker.mode.equip_traitor(current, !(src in SSticker.mode.traitors)))
-					to_chat(usr, "<span class='warning'>Equipping a syndicate failed!</span>")
-					return
+				if(has_antag_datum(/datum/antagonist/traitor))
+					var/datum/antagonist/traitor/T = has_antag_datum(/datum/antagonist/traitor)
+					T.give_codewords()
+					if(!T.equip_traitor(src))
+						to_chat(usr, "<span class='warning'>Equipping a syndicate failed!</span>")
+						return
 				log_admin("[key_name(usr)] has given [key_name(current)] an uplink")
 				message_admins("[key_name_admin(usr)] has given [key_name_admin(current)] an uplink")
 
@@ -1385,9 +1411,10 @@
 			return A
 
 /datum/mind/proc/announce_objectives()
-	to_chat(current, "<span class='notice'>Your current objectives:</span>")
-	for(var/line in splittext(gen_objective_text(), "<br>"))
-		to_chat(current, line)
+	if(current)
+		to_chat(current, "<span class='notice'>Your current objectives:</span>")
+		for(var/line in splittext(gen_objective_text(), "<br>"))
+			to_chat(current, line)
 
 /datum/mind/proc/find_syndicate_uplink()
 	var/list/L = current.get_contents()
@@ -1402,13 +1429,8 @@
 		qdel(H)
 
 /datum/mind/proc/make_Traitor()
-	if(!(src in SSticker.mode.traitors))
-		SSticker.mode.traitors += src
-		special_role = SPECIAL_ROLE_TRAITOR
-		SSticker.mode.forge_traitor_objectives(src)
-		SSticker.mode.finalize_traitor(src)
-		SSticker.mode.greet_traitor(src)
-		SSticker.mode.update_traitor_icons_added(src)
+	if(!has_antag_datum(/datum/antagonist/traitor))
+		add_antag_datum(/datum/antagonist/traitor)
 
 /datum/mind/proc/make_Nuke()
 	if(!(src in SSticker.mode.syndicates))
@@ -1470,11 +1492,11 @@
 		special_role = SPECIAL_ROLE_WIZARD
 		assigned_role = SPECIAL_ROLE_WIZARD
 		//ticker.mode.learn_basic_spells(current)
-		if(!wizardstart.len)
-			current.loc = pick(latejoin)
+		if(!GLOB.wizardstart.len)
+			current.loc = pick(GLOB.latejoin)
 			to_chat(current, "HOT INSERTION, GO GO GO")
 		else
-			current.loc = pick(wizardstart)
+			current.loc = pick(GLOB.wizardstart)
 
 		SSticker.mode.equip_wizard(current)
 		for(var/obj/item/spellbook/S in current.contents)
@@ -1561,25 +1583,6 @@
 				L = agent_landmarks[team]
 		H.forceMove(L.loc)
 
-
-// check whether this mind's mob has been brigged for the given duration
-// have to call this periodically for the duration to work properly
-/datum/mind/proc/is_brigged(duration)
-	var/turf/T = current.loc
-	if(!istype(T))
-		brigged_since = -1
-		return 0
-
-	var/is_currently_brigged = current.is_in_brig()
-	if(!is_currently_brigged)
-		brigged_since = -1
-		return 0
-
-	if(brigged_since == -1)
-		brigged_since = world.time
-
-	return (duration <= world.time - brigged_since)
-
 /datum/mind/proc/AddSpell(obj/effect/proc_holder/spell/S)
 	spell_list += S
 	S.action.Grant(current)
@@ -1627,42 +1630,39 @@
 	if(G)
 		G.reenter_corpse()
 
+
 /datum/mind/proc/make_zealot(mob/living/carbon/human/missionary, convert_duration = 6000, team_color = "red")
-	if(!missionary || !istype(missionary))		//better provide a proper missionary or the rest of this is gonna break
-		return 0
 
 	zealot_master = missionary
 
 	var/list/implanters
-	var/ref = "\ref[missionary.mind]"
 	if(!(missionary.mind in SSticker.mode.implanter))
-		SSticker.mode.implanter[ref] = list()
-	implanters = SSticker.mode.implanter[ref]
+		SSticker.mode.implanter[missionary.mind] = list()
+	implanters = SSticker.mode.implanter[missionary.mind]
 	implanters.Add(src)
 	SSticker.mode.implanted.Add(src)
 	SSticker.mode.implanted[src] = missionary.mind
-	//ticker.mode.implanter[missionary.mind] += src
-	SSticker.mode.implanter[ref] = implanters
+	SSticker.mode.implanter[missionary.mind] = implanters
 	SSticker.mode.traitors += src
-	special_role = "traitor"
+
+
+	var/datum/objective/protect/zealot_objective = new
+	zealot_objective.target = missionary.mind
+	zealot_objective.owner = src
+	zealot_objective.explanation_text = "Obey every order from and protect [missionary.real_name], the [missionary.mind.assigned_role == missionary.mind.special_role ? (missionary.mind.special_role) : (missionary.mind.assigned_role)]."
+	objectives += zealot_objective
+	add_antag_datum(/datum/antagonist/mindslave)
+
+	var/datum/antagonist/traitor/T = missionary.mind.has_antag_datum(/datum/antagonist)
+	T.update_traitor_icons_added(missionary.mind)
+
 	to_chat(current, "<span class='warning'><B>You're now a loyal zealot of [missionary.name]!</B> You now must lay down your life to protect [missionary.p_them()] and assist in [missionary.p_their()] goals at any cost.</span>")
-	var/datum/objective/protect/mindslave/MS = new
-	MS.owner = src
-	MS.target = missionary.mind
-	MS.explanation_text = "Obey every order from and protect [missionary.real_name], the [missionary.mind.assigned_role == missionary.mind.special_role ? (missionary.mind.special_role) : (missionary.mind.assigned_role)]."
-	objectives += MS
-	for(var/datum/objective/objective in objectives)
-		to_chat(current, "<B>Objective #1</B>: [objective.explanation_text]")
 
-	SSticker.mode.update_traitor_icons_added(missionary.mind)
-	SSticker.mode.update_traitor_icons_added(src)//handles datahuds/observerhuds
-
-	if(missionary.mind.som)//do not add if not a traitor..and you just picked up a robe and staff in the hall...
-		var/datum/mindslaves/slaved = missionary.mind.som
-		som = slaved
-		slaved.serv += current
-		slaved.add_serv_hud(missionary.mind, "master") //handles master servent icons
-		slaved.add_serv_hud(src, "mindslave")
+	var/datum/mindslaves/slaved = missionary.mind.som
+	som = slaved
+	slaved.serv += current
+	slaved.add_serv_hud(missionary.mind, "master") //handles master servent icons
+	slaved.add_serv_hud(src, "mindslave")
 
 	var/obj/item/clothing/under/jumpsuit = null
 	if(ishuman(current))		//only bother with the jumpsuit stuff if we are a human type, since we won't have the slot otherwise
@@ -1670,7 +1670,7 @@
 		if(H.w_uniform)
 			jumpsuit = H.w_uniform
 			jumpsuit.color = team_color
-			H.update_inv_w_uniform(0,0)
+			H.update_inv_w_uniform()
 
 	add_attack_logs(missionary, current, "Converted to a zealot for [convert_duration/600] minutes")
 	addtimer(CALLBACK(src, .proc/remove_zealot, jumpsuit), convert_duration) //deconverts after the timer expires
@@ -1679,7 +1679,7 @@
 /datum/mind/proc/remove_zealot(obj/item/clothing/under/jumpsuit = null)
 	if(!zealot_master)	//if they aren't a zealot, we can't remove their zealot status, obviously. don't bother with the rest so we don't confuse them with the messages
 		return
-	SSticker.mode.remove_traitor_mind(src)
+	remove_antag_datum(/datum/antagonist/mindslave)
 	add_attack_logs(zealot_master, current, "Lost control of zealot")
 	zealot_master = null
 
@@ -1687,10 +1687,10 @@
 		jumpsuit.color = initial(jumpsuit.color)		//reset the jumpsuit no matter where our mind is
 		if(ishuman(current))							//but only try updating us if we are still a human type since it is a human proc
 			var/mob/living/carbon/human/H = current
-			H.update_inv_w_uniform(0,0)
+			H.update_inv_w_uniform()
 
-	to_chat(current, "<span class='warning'>You seem to have forgotten the events of the past 10 minutes or so, and your head aches a bit as if someone beat it savagely with a stick.</span>")
-	to_chat(current, "<span class='warning'>This means you don't remember who you were working for or what you were doing.</span>")
+	to_chat(current, "<span class='warning'><b>You seem to have forgotten the events of the past 10 minutes or so, and your head aches a bit as if someone beat it savagely with a stick.</b></span>")
+	to_chat(current, "<span class='warning'><b>This means you don't remember who you were working for or what you were doing.</b></span>")
 
 /datum/mind/proc/is_revivable() //Note, this ONLY checks the mind.
 	if(damnation_type)
@@ -1729,7 +1729,7 @@
 	mind.active = 1    //indicates that the mind is currently synced with a client
 
 //slime
-/mob/living/carbon/slime/mind_initialize()
+/mob/living/simple_animal/slime/mind_initialize()
 	..()
 	mind.assigned_role = "slime"
 

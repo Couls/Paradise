@@ -121,8 +121,8 @@
 	return ..()
 
 /obj/machinery/door/unpowered/hotel_door/examine(mob/user)
-	..()
-	to_chat(user, "This room is currently [occupant ? "" : "un"]occupied.")
+	. = ..()
+	. += "This room is currently [occupant ? "" : "un"]occupied."
 
 /obj/machinery/door/unpowered/hotel_door/allowed(mob/living/carbon/user)
 	for(var/obj/item/card/hotel_card/C in user.get_all_slots())
@@ -272,7 +272,7 @@
 
 	var/mob/deadbeat = D.occupant
 
-	radio.autosay("[deadbeat], your card has been rejected. You have 30 seconds to check out.", name, zlevel = list(z))
+	radio.autosay("[deadbeat], your card has been rejected. You have 30 seconds to check out.", name)
 	spawn(300)
 		if(D.occupant == deadbeat)
 			// they still haven't checked out...

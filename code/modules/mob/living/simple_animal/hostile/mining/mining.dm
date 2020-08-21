@@ -23,10 +23,6 @@
 	var/icon_aggro = null
 	var/crusher_drop_mod = 25
 
-/mob/living/simple_animal/hostile/asteroid/Initialize(mapload)
-	. = ..()
-	apply_status_effect(STATUS_EFFECT_CRUSHERDAMAGETRACKING)
-
 /mob/living/simple_animal/hostile/asteroid/Aggro()
 	..()
 	if(vision_range != aggro_vision_range)
@@ -46,13 +42,13 @@
 		visible_message("<span class='danger'>[P] has a reduced effect on [src]!</span>")
 	..()
 
-/mob/living/simple_animal/hostile/asteroid/hitby(atom/movable/AM)//No floor tiling them to death, wiseguy
+/mob/living/simple_animal/hostile/asteroid/hitby(atom/movable/AM, skipcatch, hitpush, blocked, datum/thrownthing/throwingdatum) //No floor tiling them to death, wiseguy
 	if(istype(AM, /obj/item))
 		var/obj/item/T = AM
 		if(!stat)
 			Aggro()
 		if(T.throwforce <= 20)
-			visible_message("<span class='notice'>The [T.name] [src.throw_message] [src.name]!</span>")
+			visible_message("<span class='notice'>The [T.name] [throw_message] [src.name]!</span>")
 			return
 	..()
 

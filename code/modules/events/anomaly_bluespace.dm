@@ -4,7 +4,7 @@
 	endWhen = 160
 
 /datum/event/anomaly/anomaly_bluespace/announce()
-	event_announcement.Announce("Unstable bluespace anomaly detected on long range scanners. Expected location: [impact_area.name].", "Anomaly Alert")
+	GLOB.event_announcement.Announce("Unstable bluespace anomaly detected on long range scanners. Expected location: [impact_area.name].", "Anomaly Alert")
 
 /datum/event/anomaly/anomaly_bluespace/start()
 	var/turf/T = pick(get_area_turfs(impact_area))
@@ -18,7 +18,7 @@
 				// Calculate new position (searches through beacons in world)
 			var/obj/item/radio/beacon/chosen
 			var/list/possible = list()
-			for(var/obj/item/radio/beacon/W in world)
+			for(var/obj/item/radio/beacon/W in GLOB.global_radios)
 				if(!is_station_level(W.z))
 					continue
 				possible += W
@@ -33,7 +33,7 @@
 				var/turf/TO = get_turf(chosen)			 // the turf of origin we're travelling TO
 
 				playsound(TO, 'sound/effects/phasein.ogg', 100, 1)
-				event_announcement.Announce("Massive bluespace translocation detected.", "Anomaly Alert")
+				GLOB.event_announcement.Announce("Massive bluespace translocation detected.", "Anomaly Alert")
 
 				var/list/flashers = list()
 				for(var/mob/living/carbon/C in viewers(TO, null))
@@ -43,9 +43,10 @@
 				var/y_distance = TO.y - FROM.y
 				var/x_distance = TO.x - FROM.x
 				for(var/atom/movable/A in range(12, FROM )) // iterate thru list of mobs in the area
-					if(istype(A, /obj/item/radio/beacon)) continue // don't teleport beacons because that's just insanely stupid
-					if(A.anchored) continue
-
+					if(istype(A, /obj/item/radio/beacon)) // don't teleport beacons because that's just insanely stupid
+						continue
+					if(A.anchored || A.move_resist == INFINITY)
+						continue
 					var/turf/newloc = locate(A.x + x_distance, A.y + y_distance, TO.z) // calculate the new place
 					if(!A.Move(newloc)) // if the atom, for some reason, can't move, FORCE them to move! :) We try Move() first to invoke any movement-related checks the atom needs to perform after moving
 						A.loc = locate(A.x + x_distance, A.y + y_distance, TO.z)

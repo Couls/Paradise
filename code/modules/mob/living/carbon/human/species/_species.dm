@@ -18,7 +18,6 @@
 	var/tail                     // Name of tail image in species effects icon file.
 	var/datum/unarmed_attack/unarmed                  //For empty hand harm-intent attack
 	var/unarmed_type = /datum/unarmed_attack
-	var/slowdown = 0              // Passive movement speed malus (or boost, if negative)
 	var/silent_steps = 0          // Stops step noises
 
 	var/cold_level_1 = 260  // Cold damage level 1 below this point.
@@ -52,17 +51,15 @@
 	var/brain_mod = 1    // Brain damage damage reduction/amplification
 	var/stamina_mod = 1
 	var/stun_mod = 1	 // If a species is more/less impacated by stuns/weakens/paralysis
-	var/speedmod = 0	// this affects the race's speed. positive numbers make it move slower, negative numbers make it move faster
-	var/armor = 0		// overall defense for the race... or less defense, if it's negative.
+	var/speed_mod = 0	// this affects the race's speed. positive numbers make it move slower, negative numbers make it move faster
 	var/blood_damage_type = OXY //What type of damage does this species take if it's low on blood?
-	var/obj/item/mutanthands
 	var/total_health = 100
 	var/punchdamagelow = 0       //lowest possible punch damage
 	var/punchdamagehigh = 9      //highest possible punch damage
 	var/punchstunthreshold = 9	 //damage at which punches from this race will stun //yes it should be to the attacked race but it's not useful that way even if it's logical
 	var/list/default_genes = list()
 
-	var/ventcrawler = 0 //Determines if the mob can go through the vents.
+	var/ventcrawler = VENTCRAWLER_NONE //Determines if the mob can go through the vents.
 	var/has_fine_manipulation = 1 // Can use small items.
 
 	var/list/allowed_consumed_mobs = list() //If a species can consume mobs, put the type of mobs it can consume here.
@@ -74,6 +71,10 @@
 	var/clothing_flags = 0 // Underwear and socks.
 	var/exotic_blood
 	var/skinned_type
+	var/list/no_equip = list()	// slots the race can't equip stuff to
+	var/nojumpsuit = 0	// this is sorta... weird. it basically lets you equip stuff that usually needs jumpsuits without one, like belts and pockets and ids
+	var/can_craft = TRUE // Can this mob using crafting or not?
+
 	var/bodyflags = 0
 	var/dietflags  = 0	// Make sure you set this, otherwise it won't be able to digest a lot of foods
 
@@ -82,6 +83,7 @@
 	var/single_gib_type = /obj/effect/decal/cleanable/blood/gibs
 	var/remains_type = /obj/effect/decal/remains/human //What sort of remains is left behind when the species dusts
 	var/base_color      //Used when setting species.
+	var/list/inherent_factions
 
 	//Used in icon caching.
 	var/race_key = 0
@@ -113,6 +115,10 @@
 	var/scream_verb = "screams"
 	var/male_scream_sound = 'sound/goonstation/voice/male_scream.ogg'
 	var/female_scream_sound = 'sound/goonstation/voice/female_scream.ogg'
+	var/list/death_sounds = list('sound/goonstation/voice/deathgasp_1.ogg', 'sound/goonstation/voice/deathgasp_2.ogg')
+	var/list/male_dying_gasp_sounds = list('sound/goonstation/voice/male_dying_gasp_1.ogg', 'sound/goonstation/voice/male_dying_gasp_2.ogg', 'sound/goonstation/voice/male_dying_gasp_3.ogg', 'sound/goonstation/voice/male_dying_gasp_4.ogg', 'sound/goonstation/voice/male_dying_gasp_5.ogg')
+	var/list/female_dying_gasp_sounds = list('sound/goonstation/voice/female_dying_gasp_1.ogg', 'sound/goonstation/voice/female_dying_gasp_2.ogg', 'sound/goonstation/voice/female_dying_gasp_3.ogg', 'sound/goonstation/voice/female_dying_gasp_4.ogg', 'sound/goonstation/voice/female_dying_gasp_5.ogg')
+	var/gasp_sound = 'sound/goonstation/voice/gasp.ogg'
 	var/male_cough_sounds = list('sound/effects/mob_effects/m_cougha.ogg','sound/effects/mob_effects/m_coughb.ogg', 'sound/effects/mob_effects/m_coughc.ogg')
 	var/female_cough_sounds = list('sound/effects/mob_effects/f_cougha.ogg','sound/effects/mob_effects/f_coughb.ogg')
 	var/male_sneeze_sound = 'sound/effects/mob_effects/sneeze.ogg'
@@ -229,8 +235,8 @@
 		gravity = 1
 
 	if(!ignoreslow && gravity)
-		if(slowdown)
-			. = slowdown
+		if(speed_mod)
+			. = speed_mod
 
 		if(H.wear_suit)
 			. += H.wear_suit.slowdown
@@ -244,7 +250,7 @@
 		if(H.r_hand && (H.r_hand.flags & HANDSLOW))
 			. += H.r_hand.slowdown
 
-		var/health_deficiency = (H.maxHealth - H.health + H.staminaloss)
+		var/health_deficiency = max(H.maxHealth - H.health, H.staminaloss)
 		var/hungry = (500 - H.nutrition)/5 // So overeat would be 100 and default level would be 80
 		if(H.reagents)
 			for(var/datum/reagent/R in H.reagents.reagent_list)
@@ -266,16 +272,29 @@
 
 		if(H.status_flags & GOTTAGOFAST)
 			. -= 1
-		if(H.status_flags & GOTTAGOFAST_METH)
-			. -= 1
 	return .
 
 /datum/species/proc/on_species_gain(mob/living/carbon/human/H) //Handles anything not already covered by basic species assignment.
-	return
+	for(var/slot_id in no_equip)
+		var/obj/item/thing = H.get_item_by_slot(slot_id)
+		if(thing && (!thing.species_exception || !is_type_in_list(src, thing.species_exception)))
+			H.unEquip(thing)
+	if(H.hud_used)
+		H.hud_used.update_locked_slots()
+	H.ventcrawler = ventcrawler
+
+	if(inherent_factions)
+		for(var/i in inherent_factions)
+			H.faction += i //Using +=/-= for this in case you also gain the faction from a different source.
 
 /datum/species/proc/on_species_loss(mob/living/carbon/human/H)
 	if(H.butcher_results) //clear it out so we don't butcher a actual human.
 		H.butcher_results = null
+	H.ventcrawler = initial(H.ventcrawler)
+
+	if(inherent_factions)
+		for(var/i in inherent_factions)
+			H.faction -= i
 
 /datum/species/proc/updatespeciescolor(mob/living/carbon/human/H) //Handles changing icobase for species that have multiple skin colors.
 	return
@@ -326,30 +345,17 @@
 
 	switch(damagetype)
 		if(BRUTE)
-			H.damageoverlaytemp = 20
 			damage = damage * brute_mod
+			if(damage)
+				H.damageoverlaytemp = 20
 
 			if(organ.receive_damage(damage, 0, sharp, used_weapon))
 				H.UpdateDamageIcon()
 
-			if(H.LAssailant && ishuman(H.LAssailant)) //superheros still get the comical hit markers
-				var/mob/living/carbon/human/A = H.LAssailant
-				if(A.mind && A.mind in (SSticker.mode.superheroes || SSticker.mode.supervillains || SSticker.mode.greyshirts))
-					var/list/attack_bubble_recipients = list()
-					var/mob/living/user
-					for(var/mob/O in viewers(user, src))
-						if(O.client && O.has_vision(information_only=TRUE))
-							attack_bubble_recipients.Add(O.client)
-					spawn(0)
-						var/image/dmgIcon = image('icons/effects/hit_blips.dmi', src, "dmg[rand(1,2)]",MOB_LAYER+1)
-						dmgIcon.pixel_x = (!H.lying) ? rand(-3,3) : rand(-11,12)
-						dmgIcon.pixel_y = (!H.lying) ? rand(-11,9) : rand(-10,1)
-						flick_overlay(dmgIcon, attack_bubble_recipients, 9)
-
-
 		if(BURN)
-			H.damageoverlaytemp = 20
 			damage = damage * burn_mod
+			if(damage)
+				H.damageoverlaytemp = 20
 
 			if(organ.receive_damage(0, damage, sharp, used_weapon))
 				H.UpdateDamageIcon()
@@ -384,8 +390,11 @@
 		return TRUE
 
 /datum/species/proc/harm(mob/living/carbon/human/user, mob/living/carbon/human/target, datum/martial_art/attacker_style)
+	if(HAS_TRAIT(user, TRAIT_PACIFISM))
+		to_chat(user, "<span class='warning'>You don't want to harm [target]!</span>")
+		return FALSE
 	//Vampire code
-	if(user.mind && user.mind.vampire && (user.mind in SSticker.mode.vampires) && !user.mind.vampire.draining && user.zone_sel && user.zone_sel.selecting == "head" && target != user)
+	if(user.mind && user.mind.vampire && (user.mind in SSticker.mode.vampires) && !user.mind.vampire.draining && user.zone_selected == "head" && target != user)
 		if((NO_BLOOD in target.dna.species.species_traits) || target.dna.species.exotic_blood || !target.blood_volume)
 			to_chat(user, "<span class='warning'>They have no blood!</span>")
 			return
@@ -420,6 +429,9 @@
 		else
 			target.LAssailant = user
 
+		target.lastattacker = user.real_name
+		target.lastattackerckey = user.ckey
+
 		var/damage = rand(user.dna.species.punchdamagelow, user.dna.species.punchdamagehigh)
 		damage += attack.damage
 		if(!damage)
@@ -428,7 +440,7 @@
 			return FALSE
 
 
-		var/obj/item/organ/external/affecting = target.get_organ(ran_zone(user.zone_sel.selecting))
+		var/obj/item/organ/external/affecting = target.get_organ(ran_zone(user.zone_selected))
 		var/armor_block = target.run_armor_check(affecting, "melee")
 
 		playsound(target.loc, attack.attack_sound, 25, 1, -1)
@@ -455,7 +467,7 @@
 		user.do_attack_animation(target, ATTACK_EFFECT_DISARM)
 		if(target.w_uniform)
 			target.w_uniform.add_fingerprint(user)
-		var/obj/item/organ/external/affecting = target.get_organ(ran_zone(user.zone_sel.selecting))
+		var/obj/item/organ/external/affecting = target.get_organ(ran_zone(user.zone_selected))
 		var/randn = rand(1, 100)
 		if(randn <= 25)
 			target.apply_effect(2, WEAKEN, target.run_armor_check(affecting, "melee"))
@@ -506,9 +518,6 @@
 
 /datum/species/proc/spec_attack_hand(mob/living/carbon/human/M, mob/living/carbon/human/H, datum/martial_art/attacker_style = M.martial_art) //Handles any species-specific attackhand events.
 	if(!istype(M))
-		return
-	if(H.frozen)
-		to_chat(M, "<span class='warning'>Do not touch Admin-Frozen people.</span>")
 		return
 
 	if(istype(M))
@@ -585,106 +594,154 @@
 	attack_verb = list("slash", "claw")
 	damage = 6
 
-/datum/species/proc/handle_can_equip(obj/item/I, slot, disable_warning = 0, mob/living/carbon/human/user)
+/datum/species/proc/can_equip(obj/item/I, slot, disable_warning = FALSE, mob/living/carbon/human/H)
+	if(slot in no_equip)
+		if(!I.species_exception || !is_type_in_list(src, I.species_exception))
+			return FALSE
+
+	if(!H.has_organ_for_slot(slot))
+		return FALSE
+
+	switch(slot)
+		if(slot_l_hand)
+			return !H.l_hand && !H.incapacitated()
+		if(slot_r_hand)
+			return !H.r_hand && !H.incapacitated()
+		if(slot_wear_mask)
+			return !H.wear_mask && (I.slot_flags & SLOT_MASK)
+		if(slot_back)
+			return !H.back && (I.slot_flags & SLOT_BACK)
+		if(slot_wear_suit)
+			return !H.wear_suit && (I.slot_flags & SLOT_OCLOTHING)
+		if(slot_gloves)
+			return !H.gloves && (I.slot_flags & SLOT_GLOVES)
+		if(slot_shoes)
+			return !H.shoes && (I.slot_flags & SLOT_FEET)
+		if(slot_belt)
+			if(H.belt)
+				return FALSE
+			var/obj/item/organ/external/O = H.get_organ(BODY_ZONE_CHEST)
+
+			if(!H.w_uniform && !nojumpsuit && (!O || !(O.status & ORGAN_ROBOT)))
+				if(!disable_warning)
+					to_chat(H, "<span class='alert'>You need a jumpsuit before you can attach this [name].</span>")
+				return FALSE
+			if(!(I.slot_flags & SLOT_BELT))
+				return
+			return TRUE
+		if(slot_glasses)
+			return !H.glasses && (I.slot_flags & SLOT_EYES)
+		if(slot_head)
+			return !H.head && (I.slot_flags & SLOT_HEAD)
+		if(slot_l_ear)
+			return !H.l_ear && (I.slot_flags & SLOT_EARS) && !((I.slot_flags & SLOT_TWOEARS) && H.r_ear)
+		if(slot_r_ear)
+			return !H.r_ear && (I.slot_flags & SLOT_EARS) && !((I.slot_flags & SLOT_TWOEARS) && H.l_ear)
+		if(slot_w_uniform)
+			return !H.w_uniform && (I.slot_flags & SLOT_ICLOTHING)
+		if(slot_wear_id)
+			if(H.wear_id)
+				return FALSE
+			var/obj/item/organ/external/O = H.get_organ(BODY_ZONE_CHEST)
+
+			if(!H.w_uniform && !nojumpsuit && (!O || !(O.status & ORGAN_ROBOT)))
+				if(!disable_warning)
+					to_chat(H, "<span class='alert'>You need a jumpsuit before you can attach this [name].</span>")
+				return FALSE
+			if(!(I.slot_flags & SLOT_ID))
+				return FALSE
+			return TRUE
+		if(slot_wear_pda)
+			if(H.wear_pda)
+				return FALSE
+			var/obj/item/organ/external/O = H.get_organ(BODY_ZONE_CHEST)
+
+			if(!H.w_uniform && !nojumpsuit && (!O || !(O.status & ORGAN_ROBOT)))
+				if(!disable_warning)
+					to_chat(H, "<span class='alert'>You need a jumpsuit before you can attach this [name].</span>")
+				return FALSE
+			if(!(I.slot_flags & SLOT_PDA))
+				return FALSE
+			return TRUE
+		if(slot_l_store)
+			if(I.flags & NODROP) //Pockets aren't visible, so you can't move NODROP items into them.
+				return FALSE
+			if(H.l_store)
+				return FALSE
+			var/obj/item/organ/external/O = H.get_organ(BODY_ZONE_L_LEG)
+
+			if(!H.w_uniform && !nojumpsuit && (!O || !(O.status & ORGAN_ROBOT)))
+				if(!disable_warning)
+					to_chat(H, "<span class='alert'>You need a jumpsuit before you can attach this [name].</span>")
+				return FALSE
+			if(I.slot_flags & SLOT_DENYPOCKET)
+				return
+			if(I.w_class <= WEIGHT_CLASS_SMALL || (I.slot_flags & SLOT_POCKET))
+				return TRUE
+		if(slot_r_store)
+			if(I.flags & NODROP)
+				return FALSE
+			if(H.r_store)
+				return FALSE
+			var/obj/item/organ/external/O = H.get_organ(BODY_ZONE_R_LEG)
+
+			if(!H.w_uniform && !nojumpsuit && (!O || !(O.status & ORGAN_ROBOT)))
+				if(!disable_warning)
+					to_chat(H, "<span class='alert'>You need a jumpsuit before you can attach this [name].</span>")
+				return FALSE
+			if(I.slot_flags & SLOT_DENYPOCKET)
+				return FALSE
+			if(I.w_class <= WEIGHT_CLASS_SMALL || (I.slot_flags & SLOT_POCKET))
+				return TRUE
+			return FALSE
+		if(slot_s_store)
+			if(I.flags & NODROP) //Suit storage NODROP items drop if you take a suit off, this is to prevent people exploiting this.
+				return FALSE
+			if(H.s_store)
+				return FALSE
+			if(!H.wear_suit)
+				if(!disable_warning)
+					to_chat(H, "<span class='alert'>You need a suit before you can attach this [name].</span>")
+				return FALSE
+			if(!H.wear_suit.allowed)
+				if(!disable_warning)
+					to_chat(H, "You somehow have a suit with no defined allowed items for suit storage, stop that.")
+				return FALSE
+			if(I.w_class > WEIGHT_CLASS_BULKY)
+				if(!disable_warning)
+					to_chat(H, "The [name] is too big to attach.")
+				return FALSE
+			if(istype(I, /obj/item/pda) || istype(I, /obj/item/pen) || is_type_in_list(I, H.wear_suit.allowed))
+				return TRUE
+			return FALSE
+		if(slot_handcuffed)
+			return !H.handcuffed && istype(I, /obj/item/restraints/handcuffs)
+		if(slot_legcuffed)
+			return !H.legcuffed && istype(I, /obj/item/restraints/legcuffs)
+		if(slot_in_backpack)
+			if(H.back && istype(H.back, /obj/item/storage/backpack))
+				var/obj/item/storage/backpack/B = H.back
+				if(B.contents.len < B.storage_slots && I.w_class <= B.max_w_class)
+					return TRUE
+			return FALSE
+		if(slot_tie)
+			if(!H.w_uniform)
+				if(!disable_warning)
+					to_chat(H, "<span class='warning'>You need a jumpsuit before you can attach this [name].</span>")
+				return FALSE
+			var/obj/item/clothing/under/uniform = H.w_uniform
+			if(uniform.accessories.len && !uniform.can_attach_accessory(H))
+				if(!disable_warning)
+					to_chat(H, "<span class='warning'>You already have an accessory of this type attached to your [uniform].</span>")
+				return FALSE
+			if(!(I.slot_flags & SLOT_TIE))
+				return FALSE
+			return TRUE
+
+	return FALSE //Unsupported slot
+
+/datum/species/proc/update_health_hud(mob/living/carbon/human/H)
 	return FALSE
-
-/datum/species/proc/get_perceived_trauma(mob/living/carbon/human/H)
-	return H.health - H.getStaminaLoss()
-
-/datum/species/proc/handle_hud_icons(mob/living/carbon/human/H)
-	if(!H.client)
-		return
-	handle_hud_icons_health(H)
-	H.handle_hud_icons_health_overlay()
-	handle_hud_icons_nutrition(H)
-
-/datum/species/proc/handle_hud_icons_health(mob/living/carbon/H)
-	if(!H.client)
-		return
-	handle_hud_icons_health_side(H)
-	handle_hud_icons_health_doll(H)
-
-/datum/species/proc/handle_hud_icons_health_side(mob/living/carbon/human/H)
-	if(H.healths)
-		if(H.stat == DEAD || (H.status_flags & FAKEDEATH))
-			H.healths.icon_state = "health7"
-		else
-			switch(H.hal_screwyhud)
-				if(SCREWYHUD_CRIT)	H.healths.icon_state = "health6"
-				if(SCREWYHUD_DEAD)	H.healths.icon_state = "health7"
-				if(SCREWYHUD_HEALTHY)	H.healths.icon_state = "health0"
-				else
-					switch(get_perceived_trauma(H))
-						if(100 to INFINITY)		H.healths.icon_state = "health0"
-						if(80 to 100)			H.healths.icon_state = "health1"
-						if(60 to 80)			H.healths.icon_state = "health2"
-						if(40 to 60)			H.healths.icon_state = "health3"
-						if(20 to 40)			H.healths.icon_state = "health4"
-						if(0 to 20)				H.healths.icon_state = "health5"
-						else					H.healths.icon_state = "health6"
-
-/datum/species/proc/handle_hud_icons_health_doll(mob/living/carbon/human/H)
-	if(H.healthdoll)
-		if(H.stat == DEAD || (H.status_flags & FAKEDEATH))
-			H.healthdoll.icon_state = "healthdoll_DEAD"
-			if(H.healthdoll.overlays.len)
-				H.healthdoll.overlays.Cut()
-		else
-			var/list/new_overlays = list()
-			var/list/cached_overlays = H.healthdoll.cached_healthdoll_overlays
-			// Use the dead health doll as the base, since we have proper "healthy" overlays now
-			H.healthdoll.icon_state = "healthdoll_DEAD"
-			for(var/obj/item/organ/external/O in H.bodyparts)
-				var/damage = O.burn_dam + O.brute_dam
-				var/comparison = (O.max_damage/5)
-				var/icon_num = 0
-				if(damage)
-					icon_num = 1
-				if(damage > (comparison))
-					icon_num = 2
-				if(damage > (comparison*2))
-					icon_num = 3
-				if(damage > (comparison*3))
-					icon_num = 4
-				if(damage > (comparison*4))
-					icon_num = 5
-				new_overlays += "[O.limb_name][icon_num]"
-			H.healthdoll.overlays += (new_overlays - cached_overlays)
-			H.healthdoll.overlays -= (cached_overlays - new_overlays)
-			H.healthdoll.cached_healthdoll_overlays = new_overlays
-
-/datum/species/proc/handle_hud_icons_nutrition(mob/living/carbon/human/H)
-	if(H.mind && H.mind.vampire && (H.mind in SSticker.mode.vampires)) //Vampires
-		switch(H.nutrition)
-			if(NUTRITION_LEVEL_FULL to INFINITY)
-				H.throw_alert("nutrition", /obj/screen/alert/fat/vampire)
-			if(NUTRITION_LEVEL_WELL_FED to NUTRITION_LEVEL_FULL)
-				H.throw_alert("nutrition", /obj/screen/alert/full/vampire)
-			if(NUTRITION_LEVEL_FED to NUTRITION_LEVEL_WELL_FED)
-				H.throw_alert("nutrition", /obj/screen/alert/well_fed/vampire)
-			if(NUTRITION_LEVEL_HUNGRY to NUTRITION_LEVEL_FED)
-				H.throw_alert("nutrition", /obj/screen/alert/fed/vampire)
-			if(NUTRITION_LEVEL_STARVING to NUTRITION_LEVEL_HUNGRY)
-				H.throw_alert("nutrition", /obj/screen/alert/hungry/vampire)
-			else
-				H.throw_alert("nutrition", /obj/screen/alert/starving/vampire)
-		return 1
-
-	else ///Any other non-vampires
-		switch(H.nutrition)
-			if(NUTRITION_LEVEL_FULL to INFINITY)
-				H.throw_alert("nutrition", /obj/screen/alert/fat)
-			if(NUTRITION_LEVEL_WELL_FED to NUTRITION_LEVEL_FULL)
-				H.throw_alert("nutrition", /obj/screen/alert/full)
-			if(NUTRITION_LEVEL_FED to NUTRITION_LEVEL_WELL_FED)
-				H.throw_alert("nutrition", /obj/screen/alert/well_fed)
-			if(NUTRITION_LEVEL_HUNGRY to NUTRITION_LEVEL_FED)
-				H.throw_alert("nutrition", /obj/screen/alert/fed)
-			if(NUTRITION_LEVEL_STARVING to NUTRITION_LEVEL_HUNGRY)
-				H.throw_alert("nutrition", /obj/screen/alert/hungry)
-			else
-				H.throw_alert("nutrition", /obj/screen/alert/starving)
-		return 1
 
 /*
 Returns the path corresponding to the corresponding organ
@@ -757,20 +814,6 @@ It'll return null if the organ doesn't correspond, so include null checks when u
 			if(!isnull(hat.lighting_alpha))
 				H.lighting_alpha = min(hat.lighting_alpha, H.lighting_alpha)
 
-	if(istype(H.back, /obj/item/rig)) ///aghhh so snowflakey
-		var/obj/item/rig/rig = H.back
-		if(rig.visor)
-			if(!rig.helmet || (H.head && rig.helmet == H.head))
-				if(rig.visor && rig.visor.vision && rig.visor.active && rig.visor.vision.glasses)
-					var/obj/item/clothing/glasses/G = rig.visor.vision.glasses
-					if(istype(G))
-						H.sight |= G.vision_flags
-						H.see_in_dark = max(G.see_in_dark, H.see_in_dark)
-						H.see_invisible = min(G.invis_view, H.see_invisible)
-
-						if(!isnull(G.lighting_alpha))
-							H.lighting_alpha = min(G.lighting_alpha, H.lighting_alpha)
-
 	if(H.vision_type)
 		H.sight |= H.vision_type.sight_flags
 		H.see_in_dark = max(H.see_in_dark, H.vision_type.see_in_dark)
@@ -786,7 +829,7 @@ It'll return null if the organ doesn't correspond, so include null checks when u
 
 	H.sync_lighting_plane_alpha()
 
-/datum/species/proc/water_act(mob/living/carbon/human/M, volume, temperature, source, method = TOUCH)
+/datum/species/proc/water_act(mob/living/carbon/human/M, volume, temperature, source, method = REAGENT_TOUCH)
 	if(abs(temperature - M.bodytemperature) > 10) // If our water and mob temperature varies by more than 10K, cool or/ heat them appropriately.
 		M.bodytemperature = (temperature + M.bodytemperature) * 0.5 // Approximation for gradual heating or cooling.
 
@@ -795,7 +838,7 @@ It'll return null if the organ doesn't correspond, so include null checks when u
 
 /datum/species/proc/spec_hitby(atom/movable/AM, mob/living/carbon/human/H)
 
-/datum/species/proc/spec_attacked_by(obj/item/I, mob/living/user, obj/item/bodypart/affecting, intent, mob/living/carbon/human/H)
+/datum/species/proc/spec_attacked_by(obj/item/I, mob/living/user, obj/item/organ/external/affecting, intent, mob/living/carbon/human/H)
 
 /proc/get_random_species(species_name = FALSE)	// Returns a random non black-listed or hazardous species, either as a string or datum
 	var/static/list/random_species = list()

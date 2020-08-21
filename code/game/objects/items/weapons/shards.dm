@@ -12,7 +12,9 @@
 	materials = list(MAT_GLASS = MINERAL_MATERIAL_AMOUNT)
 	attack_verb = list("stabbed", "slashed", "sliced", "cut")
 	hitsound = 'sound/weapons/bladeslice.ogg'
-	armor = list("melee" = 100, "bullet" = 0, "laser" = 0, "energy" = 100, "bomb" = 0, "bio" = 0, "rad" = 0)
+	armor = list("melee" = 100, "bullet" = 0, "laser" = 0, "energy" = 100, "bomb" = 0, "bio" = 0, "rad" = 0, "fire" = 50, "acid" = 100)
+	max_integrity = 40
+	resistance_flags = ACID_PROOF
 	sharp = TRUE
 	var/cooldown = 0
 	var/icon_prefix
@@ -25,6 +27,7 @@
 
 /obj/item/shard/Initialize(mapload)
 	. = ..()
+	AddComponent(/datum/component/caltrop, force)
 	icon_state = pick("large", "medium", "small")
 	switch(icon_state)
 		if("small")
@@ -48,7 +51,7 @@
 		return
 	if(ishuman(user))
 		var/mob/living/carbon/human/H = user
-		if(!H.gloves)
+		if(!H.gloves && !(PIERCEIMMUNE in H.dna.species.species_traits))
 			var/obj/item/organ/external/affecting = H.get_organ("[user.hand ? "l" : "r" ]_hand")
 			if(affecting.is_robotic())
 				return
@@ -57,55 +60,38 @@
 				H.UpdateDamageIcon()
 
 /obj/item/shard/attackby(obj/item/I, mob/user, params)
-	if(iswelder(I))
-		var/obj/item/weldingtool/WT = I
-		if(WT.remove_fuel(0, user))
-			var/obj/item/stack/sheet/NG = new welded_type(user.loc)
-			for(var/obj/item/stack/sheet/G in user.loc)
-				if(!istype(G, welded_type))
-					continue
-				if(G == NG)
-					continue
-				if(G.amount >= G.max_amount)
-					continue
-				G.attackby(NG, user)
-			to_chat(user, "<span class='notice'>You add the newly-formed glass to the stack. It now contains [NG.amount] sheet\s.</span>")
-			qdel(src)
-		return
 	if(istype(I, /obj/item/lightreplacer))
 		I.attackby(src, user)
 		return
 	return ..()
+
+/obj/item/shard/welder_act(mob/user, obj/item/I)
+	. = TRUE
+	if(!I.use_tool(src, user, volume = I.tool_volume))
+		return
+	var/obj/item/stack/sheet/NG = new welded_type(user.loc)
+	for(var/obj/item/stack/sheet/G in user.loc)
+		if(!istype(G, welded_type))
+			continue
+		if(G == NG)
+			continue
+		if(G.amount >= G.max_amount)
+			continue
+		G.attackby(NG, user)
+	to_chat(user, "<span class='notice'>You add the newly-formed glass to the stack. It now contains [NG.amount] sheet\s.</span>")
+	qdel(src)
 
 /obj/item/shard/Crossed(mob/living/L, oldloc)
 	if(istype(L) && has_gravity(loc))
 		if(L.incorporeal_move || L.flying)
 			return
 		playsound(loc, 'sound/effects/glass_step.ogg', 50, TRUE)
-		if(ishuman(L))
-			var/mob/living/carbon/human/H = L
-			var/obj/item/organ/external/affecting = H.get_organ(pick("l_foot", "r_foot"))
-			if(!affecting)
-				return
-			if(affecting.is_robotic())
-				return
-			var/feetCover = (H.wear_suit && H.wear_suit.body_parts_covered & FEET) || (H.w_uniform && H.w_uniform.body_parts_covered & FEET)
-			if(H.shoes || feetCover || H.buckled)
-				return
-			if(affecting.receive_damage(force, 0))
-				H.UpdateDamageIcon()
-
-			if(cooldown < world.time - 10) //cooldown to avoid message spam.
-				if(!H.incapacitated(ignore_restraints = TRUE))
-					H.visible_message("<span class='danger'>[H] steps on [src]!</span>", \
-							"<span class='userdanger'>You step on [src]!</span>")
-				else
-					H.visible_message("<span class='danger'>[H] slides on [src]!</span>", \
-							"<span class='userdanger'>You slide on [src]!</span>")
-
-				cooldown = world.time
-			H.Weaken(3)
 	return ..()
+
+/obj/item/shard/decompile_act(obj/item/matter_decompiler/C, mob/user)
+	C.stored_comms["glass"] += 3
+	qdel(src)
+	return TRUE
 
 /obj/item/shard/plasma
 	name = "plasma shard"

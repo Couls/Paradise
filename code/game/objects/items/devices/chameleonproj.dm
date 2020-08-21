@@ -112,7 +112,16 @@
 		to_chat(M, "<span class='danger'>Your chameleon-projector deactivates.</span>")
 	master.disrupt()
 
-/obj/effect/dummy/chameleon/ex_act(var/severity) //no longer bomb-proof
+/obj/effect/dummy/chameleon/attack_animal()
+	master.disrupt()
+
+/obj/effect/dummy/chameleon/attack_slime()
+	master.disrupt()
+
+/obj/effect/dummy/chameleon/attack_alien()
+	master.disrupt()
+
+/obj/effect/dummy/chameleon/ex_act(severity) //no longer bomb-proof
 	for(var/mob/M in src)
 		to_chat(M, "<span class='danger'>Your chameleon-projector deactivates.</span>")
 		spawn()
@@ -232,6 +241,7 @@
 	user.base_icon = disguise
 	user.icon_state = disguise
 	user.cham_proj = src
+	user.bubble_icon = "robot"
 	active = TRUE
 	user.update_icons()
 
@@ -240,6 +250,7 @@
 	S = user
 	user.base_icon = initial(user.base_icon)
 	user.icon_state = initial(user.icon_state)
+	user.bubble_icon = "syndibot"
 	active = FALSE
 	user.update_icons()
 

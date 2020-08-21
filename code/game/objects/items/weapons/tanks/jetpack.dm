@@ -35,11 +35,9 @@
 
 
 /obj/item/tank/jetpack/examine(mob/user)
-	if(!..(user, 0))
-		return
-
-	if(air_contents.oxygen < 10)
-		to_chat(user, "<span class='danger'>The meter on [src] indicates you are almost out of air!</span>")
+	. = ..()
+	if(get_dist(user, src) <= 0 && air_contents.oxygen < 10)
+		. += "<span class='danger'>The meter on [src] indicates you are almost out of air!</span>"
 		playsound(user, 'sound/effects/alert.ogg', 50, 1)
 
 
@@ -122,6 +120,7 @@
 	item_state = "jetpack-captain"
 	volume = 90
 	w_class = WEIGHT_CLASS_NORMAL
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF //steal objective items are hard to destroy.
 
 /obj/item/tank/jetpack/oxygen/harness
 	name = "jet harness (oxygen)"
@@ -156,11 +155,9 @@
 	air_contents.carbon_dioxide = (6*ONE_ATMOSPHERE)*volume/(R_IDEAL_GAS_EQUATION*T20C)
 
 /obj/item/tank/jetpack/carbondioxide/examine(mob/user)
-	if(!..(user, 0))
-		return
-
-	if(air_contents.carbon_dioxide < 10)
-		to_chat(user, "<span class='danger'>The meter on [src] indicates you are almost out of air!</span>")
+	. = ..()
+	if(get_dist(user, src) <= 0 && air_contents.carbon_dioxide < 10)
+		. += "<span class='danger'>The meter on [src] indicates you are almost out of air!</span>"
 		playsound(user, 'sound/effects/alert.ogg', 50, 1)
 
 /obj/item/tank/jetpack/suit
@@ -222,29 +219,3 @@
 		turn_off(cur_user)
 		return
 	..()
-
-/obj/item/tank/jetpack/rig
-	name = "jetpack"
-	var/obj/item/rig/holder
-	actions_types = list(/datum/action/item_action/toggle_jetpack, /datum/action/item_action/jetpack_stabilization)
-
-/obj/item/tank/jetpack/rig/examine()
-	to_chat(usr, "It's a jetpack. If you can see this, report it on the bug tracker.")
-	return 0
-
-/obj/item/tank/jetpack/rig/allow_thrust(num, mob/living/user)
-	if(!on)
-		return 0
-
-	if(!istype(holder) || !holder.air_supply)
-		return 0
-
-	var/datum/gas_mixture/removed = holder.air_supply.air_contents.remove(num)
-	if(removed.total_moles() < 0.005)
-		turn_off(user)
-		return 0
-
-	var/turf/T = get_turf(user)
-	T.assume_air(removed)
-
-	return 1

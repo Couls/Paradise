@@ -12,7 +12,7 @@
 	select_name = "kill"
 
 /obj/item/ammo_casing/energy/laser/cyborg //to balance cyborg energy cost seperately
-    e_cost = 250
+	e_cost = 250
 
 /obj/item/ammo_casing/energy/lasergun
 	projectile_type = /obj/item/projectile/beam/laser
@@ -25,6 +25,7 @@
 /obj/item/ammo_casing/energy/laser/practice
 	projectile_type = /obj/item/projectile/beam/practice
 	select_name = "practice"
+	harmful = FALSE
 
 /obj/item/ammo_casing/energy/laser/scatter
 	projectile_type = /obj/item/projectile/beam/scatter
@@ -52,10 +53,12 @@
 /obj/item/ammo_casing/energy/laser/bluetag
 	projectile_type = /obj/item/projectile/beam/lasertag/bluetag
 	select_name = "bluetag"
+	harmful = FALSE
 
 /obj/item/ammo_casing/energy/laser/redtag
 	projectile_type = /obj/item/projectile/beam/lasertag/redtag
 	select_name = "redtag"
+	harmful = FALSE
 
 /obj/item/ammo_casing/energy/xray
 	projectile_type = /obj/item/projectile/beam/xray
@@ -72,6 +75,10 @@
 	e_cost = 125
 	select_name = "precise"
 
+/obj/item/ammo_casing/energy/immolator/strong/cyborg
+	// Used by gamma ERT borgs
+	e_cost = 1000 // 5x that of the standard laser, for 2.25x the damage (if 1/1 shots hit) plus ignite. Not energy-efficient, but can be used for sniping.
+
 /obj/item/ammo_casing/energy/immolator/scatter
 	projectile_type = /obj/item/projectile/beam/immolator/weak
 	e_cost = 125
@@ -79,12 +86,17 @@
 	variance = 25
 	select_name = "scatter"
 
+/obj/item/ammo_casing/energy/immolator/scatter/cyborg
+	// Used by gamma ERT borgs
+	e_cost = 1000 // 5x that of the standard laser, for 7.5x the damage (if 6/6 shots hit) plus ignite. Efficient only if you hit with at least 4/6 of the shots.
+
 /obj/item/ammo_casing/energy/electrode
 	projectile_type = /obj/item/projectile/energy/electrode
 	select_name = "stun"
 	fire_sound = 'sound/weapons/taser.ogg'
 	e_cost = 200
 	delay = 15
+	harmful = FALSE
 
 /obj/item/ammo_casing/energy/electrode/gun
 	fire_sound = 'sound/weapons/gunshots/gunshot.ogg'
@@ -110,6 +122,7 @@
 
 /obj/item/ammo_casing/energy/flora
 	fire_sound = 'sound/effects/stealthoff.ogg'
+	harmful = FALSE
 
 /obj/item/ammo_casing/energy/flora/yield
 	projectile_type = /obj/item/projectile/energy/florayield
@@ -140,6 +153,7 @@
 	select_name  = "disable"
 	e_cost = 50
 	fire_sound = 'sound/weapons/taser2.ogg'
+	harmful = FALSE
 
 /obj/item/ammo_casing/energy/disabler/cyborg //seperate balancing for cyborg, again
 	e_cost = 250
@@ -162,6 +176,7 @@
 	fire_sound = 'sound/weapons/pulse3.ogg'
 	var/obj/item/gun/energy/wormhole_projector/gun = null
 	select_name = "blue"
+	harmful = FALSE
 
 /obj/item/ammo_casing/energy/wormhole/New(var/obj/item/gun/energy/wormhole_projector/wh)
 	gun = wh

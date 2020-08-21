@@ -2,7 +2,7 @@
 	if(M.a_intent == INTENT_DISARM)
 		if(!lying)
 			M.do_attack_animation(src, ATTACK_EFFECT_DISARM)
-			if(prob(85))
+			if(prob(xeno_disarm_chance))
 				Stun(7)
 				step(src, get_dir(M,src))
 				spawn(5)
@@ -19,7 +19,7 @@
 		..()
 	return
 
-/mob/living/silicon/robot/attack_slime(mob/living/carbon/slime/M)
+/mob/living/silicon/robot/attack_slime(mob/living/simple_animal/slime/M)
 	if(..()) //successful slime shock
 		flash_eyes(affect_silicon = 1)
 		var/stunprob = M.powerlevel * 7 + 10

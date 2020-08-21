@@ -6,14 +6,13 @@
 	icon = 'icons/obj/projectiles.dmi'
 	icon_state = "bullet"
 	density = 0
-	unacidable = 1
+	resistance_flags = LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
 	anchored = 1 //There's a reason this is here, Mport. God fucking damn it -Agouri. Find&Fix by Pete. The reason this is here is to stop the curving of emitter shots.
 	flags = ABSTRACT
 	pass_flags = PASSTABLE
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	hitsound = 'sound/weapons/pierce.ogg'
 	var/hitsound_wall = ""
-	burn_state = LAVA_PROOF
 	var/def_zone = ""	//Aiming at
 	var/mob/firer = null//Who shot it
 	var/obj/item/ammo_casing/ammo_casing = null
@@ -26,9 +25,10 @@
 	var/p_x = 16
 	var/p_y = 16 // the pixel location of the tile that the player clicked. Default is the center
 	var/speed = 1			//Amount of deciseconds it takes for projectile to travel
-	var/Angle = 0
+	var/Angle = null
 	var/spread = 0			//amount (in degrees) of projectile spread
 	animate_movement = 0
+
 
 	//Fired processing vars
 	var/fired = FALSE	//Have we been fired yet
@@ -43,7 +43,7 @@
 	var/pixel_x_offset = 0
 	var/pixel_y_offset = 0
 	var/new_x = 0
-	var/new_y = 0	
+	var/new_y = 0
 	var/ignore_source_check = FALSE
 
 	var/damage = 10
@@ -72,7 +72,7 @@
 	var/impact_effect_type //what type of impact effect to show when hitting something
 	var/ricochets = 0
 	var/ricochets_max = 2
-	var/ricochet_chance = 0
+	var/ricochet_chance = 30
 	var/nondirectional_sprite = FALSE //Set TRUE to prevent projectiles from having their sprites rotated based on firing angle
 	var/log_override = FALSE //whether print to admin attack logs or just keep it in the diary
 	var/decayedRange
@@ -194,7 +194,7 @@
 
 /obj/item/projectile/proc/vol_by_damage()
 	if(damage)
-		return Clamp((damage) * 0.67, 30, 100)// Multiply projectile damage by 0.67, then clamp the value between 30 and 100
+		return clamp((damage) * 0.67, 30, 100)// Multiply projectile damage by 0.67, then clamp the value between 30 and 100
 	else
 		return 50 //if the projectile doesn't do damage, play its hitsound at 50% volume
 
@@ -204,13 +204,13 @@
 
 	if(check_ricochet(A) && check_ricochet_flag(A) && ricochets < ricochets_max)
 		ricochets++
-	if(A.handle_ricochet(src))
-		on_ricochet(A)
-		ignore_source_check = TRUE
-		range = initial(range)
-		return TRUE
-	if(firer)
-		if(A == firer || (A == firer.loc && istype(A, /obj/mecha))) //cannot shoot yourself or your mech
+		if(A.handle_ricochet(src))
+			on_ricochet(A)
+			ignore_source_check = TRUE
+			range = initial(range)
+			return TRUE
+	if(firer && !ignore_source_check)
+		if(A == firer || (A == firer.loc && ismecha(A))) //cannot shoot yourself or your mech
 			loc = A.loc
 			return 0
 
@@ -218,7 +218,7 @@
 	def_zone = ran_zone(def_zone, max(100-(7*distance), 5)) //Lower accurancy/longer range tradeoff. 7 is a balanced number to use.
 
 	if(isturf(A) && hitsound_wall)
-		var/volume = Clamp(vol_by_damage() + 20, 0, 100)
+		var/volume = clamp(vol_by_damage() + 20, 0, 100)
 		if(suppressed)
 			volume = 5
 		playsound(loc, hitsound_wall, volume, 1, -1)
@@ -395,7 +395,27 @@
 		angle = Atan2(y - oy, x - ox)
 	return list(angle, p_x, p_y)
 
-obj/item/projectile/Crossed(atom/movable/AM, oldloc) //A mob moving on a tile with a projectile is hit by it.
+/obj/item/projectile/proc/reflect_back(atom/source, list/position_modifiers = list(0, 0, 0, 0, 0, -1, 1, -2, 2))
+	if(starting)
+		var/new_x = starting.x + pick(position_modifiers)
+		var/new_y = starting.y + pick(position_modifiers)
+		var/turf/curloc = get_turf(source)
+
+		if(ismob(source))
+			firer = source // The reflecting mob will be the new firer
+		else
+			firer = null // Reflected by something other than a mob so firer will be null
+
+		// redirect the projectile
+		original = locate(new_x, new_y, z)
+		starting = curloc
+		firer = src
+		var/new_angle_s = P.Angle + rand(120,240)
+		while(new_angle_s > 180)	// Translate to regular projectile degrees
+			new_angle_s -= 360
+		P.setAngle(new_angle_s)
+
+/obj/item/projectile/Crossed(atom/movable/AM, oldloc) //A mob moving on a tile with a projectile is hit by it.
 	..()
 	if(isliving(AM) && AM.density && !checkpass(PASSMOB))
 		Bump(AM, 1)
@@ -419,7 +439,7 @@ obj/item/projectile/Crossed(atom/movable/AM, oldloc) //A mob moving on a tile wi
 	return FALSE
 
 /obj/item/projectile/proc/check_ricochet_flag(atom/A)
-	if(A.flags_2 & CHECK_RICOCHET_1)
+	if(A.flags_2 & CHECK_RICOCHET_2)
 		return TRUE
 	return FALSE
 

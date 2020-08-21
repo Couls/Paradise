@@ -3,6 +3,7 @@
 	desc = "A nausea-inducing hunk of twisting flesh and metal."
 	icon = 'icons/obj/abductor.dmi'
 	icon_state = "gland"
+	dead_icon = null
 	status = ORGAN_ROBOT
 	origin_tech = "materials=4;biotech=7;abductor=3"
 	beating = TRUE
@@ -17,6 +18,9 @@
 	var/mind_control_uses = 1
 	var/mind_control_duration = 1800
 	var/active_mind_control = FALSE
+
+/obj/item/organ/internal/heart/gland/update_icon()
+	return
 
 /obj/item/organ/internal/heart/gland/proc/ownerCheck()
 	if(ishuman(owner))
@@ -65,7 +69,7 @@
 	active = 0
 	if(initial(uses) == 1)
 		uses = initial(uses)
-	var/datum/atom_hud/abductor/hud = huds[DATA_HUD_ABDUCTOR]
+	var/datum/atom_hud/abductor/hud = GLOB.huds[DATA_HUD_ABDUCTOR]
 	hud.remove_from_hud(owner)
 	clear_mind_control()
 	. = ..()
@@ -74,7 +78,7 @@
 	..()
 	if(special != 2 && uses) // Special 2 means abductor surgery
 		Start()
-	var/datum/atom_hud/abductor/hud = huds[DATA_HUD_ABDUCTOR]
+	var/datum/atom_hud/abductor/hud = GLOB.huds[DATA_HUD_ABDUCTOR]
 	hud.add_to_hud(owner)
 	update_gland_hud()
 
@@ -129,7 +133,7 @@
 	to_chat(owner, "<span class='warning'>You feel nauseous!</span>")
 	owner.vomit(20)
 
-	var/mob/living/carbon/slime/Slime = new/mob/living/carbon/slime(get_turf(owner))
+	var/mob/living/simple_animal/slime/Slime = new(get_turf(owner), "grey")
 	Slime.Friends = list(owner)
 	Slime.Leader = owner
 
@@ -273,14 +277,14 @@
 	..()
 	if(ishuman(owner))
 		owner.gene_stability += GENE_INSTABILITY_MODERATE // give them this gene for free
-		owner.dna.SetSEState(SHOCKIMMUNITYBLOCK, TRUE)
-		genemutcheck(owner, SHOCKIMMUNITYBLOCK,  null, MUTCHK_FORCED)
+		owner.dna.SetSEState(GLOB.shockimmunityblock, TRUE)
+		genemutcheck(owner, GLOB.shockimmunityblock,  null, MUTCHK_FORCED)
 
 /obj/item/organ/internal/heart/gland/electric/remove(mob/living/carbon/M, special = 0)
 	if(ishuman(owner))
 		owner.gene_stability -= GENE_INSTABILITY_MODERATE // but return it to normal once it's removed
-		owner.dna.SetSEState(SHOCKIMMUNITYBLOCK, FALSE)
-		genemutcheck(owner, SHOCKIMMUNITYBLOCK,  null, MUTCHK_FORCED)
+		owner.dna.SetSEState(GLOB.shockimmunityblock, FALSE)
+		genemutcheck(owner, GLOB.shockimmunityblock,  null, MUTCHK_FORCED)
 	return ..()
 
 /obj/item/organ/internal/heart/gland/electric/activate()
@@ -342,5 +346,5 @@
 		owner.visible_message("<span class='danger'>[owner] vomits a cloud of plasma!</span>")
 		var/turf/simulated/T = get_turf(owner)
 		if(istype(T))
-			T.atmos_spawn_air(SPAWN_TOXINS|SPAWN_20C,50)
+			T.atmos_spawn_air(LINDA_SPAWN_TOXINS|LINDA_SPAWN_20C,50)
 		owner.vomit()

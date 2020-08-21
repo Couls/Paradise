@@ -7,7 +7,8 @@
 /mob/living/simple_animal/hostile/blob
 	icon = 'icons/mob/blob.dmi'
 	pass_flags = PASSBLOB
-	faction = list("blob")
+	faction = list(ROLE_BLOB)
+	bubble_icon = "blob"
 	atmos_requirements = list("min_oxy" = 0, "max_oxy" = 0, "min_tox" = 0, "max_tox" = 0, "min_co2" = 0, "max_co2" = 0, "min_n2" = 0, "max_n2" = 0)
 	minbodytemp = 0
 	maxbodytemp = 360
@@ -21,7 +22,14 @@
 		color = a_color
 
 /mob/living/simple_animal/hostile/blob/blob_act()
-	return
+	if(stat != DEAD && health < maxHealth)
+		for(var/i in 1 to 2)
+			var/obj/effect/temp_visual/heal/H = new /obj/effect/temp_visual/heal(get_turf(src)) //hello yes you are being healed
+			if(overmind)
+				H.color = overmind.blob_reagent_datum.complementary_color
+			else
+				H.color = "#000000"
+		adjustHealth(-maxHealth * 0.0125)
 
 
 ////////////////
@@ -44,11 +52,12 @@
 	speak_emote = list("pulses")
 	var/obj/structure/blob/factory/factory = null
 	var/list/human_overlays = list()
-	var/is_zombie = 0
+	var/mob/living/carbon/human/oldguy
+	var/is_zombie = FALSE
 
 /mob/living/simple_animal/hostile/blob/blobspore/fire_act(datum/gas_mixture/air, exposed_temperature, exposed_volume, global_overlay = TRUE)
 	..()
-	adjustBruteLoss(Clamp(0.01 * exposed_temperature, 1, 5))
+	adjustBruteLoss(clamp(0.01 * exposed_temperature, 1, 5))
 
 
 /mob/living/simple_animal/hostile/blob/blobspore/CanPass(atom/movable/mover, turf/target, height=0)
@@ -78,8 +87,8 @@
 	is_zombie = TRUE
 	if(H.wear_suit)
 		var/obj/item/clothing/suit/armor/A = H.wear_suit
-		if(A.armor && A.armor["melee"])
-			maxHealth += A.armor["melee"] //That zombie's got armor, I want armor!
+		if(A.armor && A.armor.getRating("melee"))
+			maxHealth += A.armor.getRating("melee") //That zombie's got armor, I want armor!
 	maxHealth += 40
 	health = maxHealth
 	name = "blob zombie"
@@ -95,6 +104,7 @@
 	human_overlays = H.overlays
 	update_icons()
 	H.forceMove(src)
+	oldguy = H
 	visible_message("<span class='warning'>The corpse of [H.name] suddenly rises!</span>")
 
 /mob/living/simple_animal/hostile/blob/blobspore/death(gibbed)
@@ -123,20 +133,16 @@
 	if(factory)
 		factory.spores -= src
 	factory = null
-	if(contents)
-		for(var/mob/M in contents)
-			M.loc = get_turf(src)
+	if(oldguy)
+		oldguy.forceMove(get_turf(src))
+		oldguy = null
 	return ..()
 
 
 /mob/living/simple_animal/hostile/blob/blobspore/update_icons()
 	..()
 
-	if(overmind && overmind.blob_reagent_datum)
-		adjustcolors(overmind.blob_reagent_datum.complementary_color)
-	else
-		adjustcolors(overmind.blob_reagent_datum.complementary_color) //to ensure zombie/other overlays update
-
+	adjustcolors(overmind?.blob_reagent_datum?.complementary_color)
 
 /mob/living/simple_animal/hostile/blob/blobspore/adjustcolors(var/a_color)
 	color = a_color
@@ -145,8 +151,7 @@
 		overlays.Cut()
 		overlays = human_overlays
 		var/image/I = image('icons/mob/blob.dmi', icon_state = "blob_head")
-		I.color = overmind.blob_reagent_datum.complementary_color
-		color = initial(overmind.blob_reagent_datum.complementary_color)//looks better.
+		I.color = color
 		overlays += I
 
 /////////////////
@@ -184,9 +189,7 @@
 		else
 			adjustBruteLoss(0.2) // If you are at full health, you won't lose health. You'll need it. However the moment anybody sneezes on you, the decaying will begin.
 			adjustFireLoss(0.2)
-
-/mob/living/simple_animal/hostile/blob/blobbernaut/blob_act()
-	return
+	..()
 
 /mob/living/simple_animal/hostile/blob/blobbernaut/New()
 	..()

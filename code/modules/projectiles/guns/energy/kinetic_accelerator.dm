@@ -28,27 +28,31 @@
 	var/empty_state = "kineticgun_empty"
 
 /obj/item/gun/energy/kinetic_accelerator/examine(mob/user)
-	if(..(user, 1))
+	. = ..()
+	if(in_range(user, src))
 		if(max_mod_capacity)
-			to_chat(user, "<b>[get_remaining_mod_capacity()]%</b> mod capacity remaining.")
+			. += "<b>[get_remaining_mod_capacity()]%</b> mod capacity remaining."
 			for(var/A in get_modkits())
 				var/obj/item/borg/upgrade/modkit/M = A
-				to_chat(user, "<span class='notice'>There is a [M.name] mod installed, using <b>[M.cost]%</b> capacity.</span>")
+				. += "<span class='notice'>There is a [M.name] mod installed, using <b>[M.cost]%</b> capacity.</span>"
 
 /obj/item/gun/energy/kinetic_accelerator/attackby(obj/item/I, mob/user)
-	if(iscrowbar(I))
-		if(modkits.len)
-			to_chat(user, "<span class='notice'>You pry the modifications out.</span>")
-			playsound(loc, I.usesound, 100, 1)
-			for(var/obj/item/borg/upgrade/modkit/M in modkits)
-				M.uninstall(src)
-		else
-			to_chat(user, "<span class='notice'>There are no modifications currently installed.</span>")
-	else if(istype(I, /obj/item/borg/upgrade/modkit))
+	if(istype(I, /obj/item/borg/upgrade/modkit))
 		var/obj/item/borg/upgrade/modkit/MK = I
 		MK.install(src, user)
 	else
 		return ..()
+
+/obj/item/gun/energy/kinetic_accelerator/crowbar_act(mob/user, obj/item/I)
+	. = TRUE
+	if(!modkits.len)
+		to_chat(user, "<span class='notice'>There are no modifications currently installed.</span>")
+		return
+	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
+		return
+	to_chat(user, "<span class='notice'>You pry the modifications out.</span>")
+	for(var/obj/item/borg/upgrade/modkit/M in modkits)
+		M.uninstall(src)
 
 /obj/item/gun/energy/kinetic_accelerator/proc/get_remaining_mod_capacity()
 	var/current_capacity_used = 0
@@ -105,7 +109,7 @@
 		empty()
 
 /obj/item/gun/energy/kinetic_accelerator/proc/empty()
-	power_supply.use(500)
+	cell.use(500)
 	update_icon()
 
 /obj/item/gun/energy/kinetic_accelerator/proc/attempt_reload(recharge_time)
@@ -131,8 +135,11 @@
 /obj/item/gun/energy/kinetic_accelerator/emp_act(severity)
 	return
 
+/obj/item/gun/energy/kinetic_accelerator/robocharge()
+	return
+
 /obj/item/gun/energy/kinetic_accelerator/proc/reload()
-	power_supply.give(500)
+	cell.give(500)
 	on_recharge()
 	if(!suppressed)
 		playsound(loc, 'sound/weapons/kenetic_reload.ogg', 60, 1)
@@ -246,7 +253,7 @@
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "modkit"
 	origin_tech = "programming=2;materials=2;magnets=4"
-	require_module = 1
+	require_module = TRUE
 	module_type = /obj/item/robot_module/miner
 	usesound = 'sound/items/screwdriver.ogg'
 	var/denied_type = null
@@ -257,8 +264,9 @@
 	var/minebot_exclusive = FALSE
 
 /obj/item/borg/upgrade/modkit/examine(mob/user)
-	if(..(user, 1))
-		to_chat(user, "<span class='notice'>Occupies <b>[cost]%</b> of mod capacity.</span>")
+	. = ..()
+	if(in_range(user, src))
+		. += "<span class='notice'>Occupies <b>[cost]%</b> of mod capacity.</span>"
 
 /obj/item/borg/upgrade/modkit/attackby(obj/item/A, mob/user)
 	if(istype(A, /obj/item/gun/energy/kinetic_accelerator) && !issilicon(user))

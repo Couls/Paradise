@@ -46,7 +46,7 @@
 
 /obj/item/flashlight/attack(mob/living/M as mob, mob/living/user as mob)
 	add_fingerprint(user)
-	if(on && user.zone_sel.selecting == "eyes")
+	if(on && user.zone_selected == "eyes")
 
 		if(((CLUMSY in user.mutations) || user.getBrainLoss() >= 60) && prob(50))	//too dumb to use flashlight properly
 			return ..()	//just hit them in the head
@@ -74,7 +74,7 @@
 
 			if(istype(H)) //robots and aliens are unaffected
 				var/obj/item/organ/internal/eyes/eyes = H.get_int_organ(/obj/item/organ/internal/eyes)
-				if(M.stat == DEAD || !eyes || M.disabilities & BLIND)	//mob is dead or fully blind
+				if(M.stat == DEAD || !eyes || (BLINDNESS in M.mutations))	//mob is dead or fully blind
 					to_chat(user, "<span class='notice'>[M]'s pupils are unresponsive to the light!</span>")
 				else if((XRAY in M.mutations) || eyes.see_in_dark >= 8) //The mob's either got the X-RAY vision or has a tapetum lucidum (extreme nightvision, i.e. Vulp/Tajara with COLOURBLIND & their monkey forms).
 					to_chat(user, "<span class='notice'>[M]'s pupils glow eerily!</span>")
@@ -326,6 +326,7 @@
 	on = TRUE //Bio-luminesence has one setting, on.
 
 /obj/item/flashlight/slime/New()
+	..()
 	set_light(brightness_on)
 	spawn(1) //Might be sloppy, but seems to be necessary to prevent further runtimes and make these work as intended... don't judge me!
 		update_brightness()
@@ -362,7 +363,7 @@
 	return TRUE
 
 /obj/item/flashlight/emp/attack(mob/living/M as mob, mob/living/user as mob)
-	if(on && user.zone_sel.selecting == "eyes") // call original attack proc only if aiming at the eyes
+	if(on && user.zone_selected == "eyes") // call original attack proc only if aiming at the eyes
 		..()
 	return
 
@@ -394,5 +395,4 @@
 	on = TRUE
 	anchored = TRUE
 	var/range = null
-	unacidable = TRUE
-	burn_state = LAVA_PROOF
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF

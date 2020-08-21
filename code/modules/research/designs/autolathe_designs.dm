@@ -123,14 +123,6 @@
 	build_path = /obj/item/storage/toolbox
 	category = list("initial","Tools")
 
-/datum/design/console_screen
-	name = "Console Screen"
-	id = "console_screen"
-	build_type = AUTOLATHE
-	materials = list(MAT_GLASS = 200)
-	build_path = /obj/item/stock_parts/console_screen
-	category = list("initial", "Electronics")
-
 /datum/design/apc_board
 	name = "APC module"
 	id = "power control"
@@ -203,6 +195,14 @@
 	build_path = /obj/item/floor_painter
 	category = list("initial", "Miscellaneous")
 
+/datum/design/airlock_painter
+	name = "Airlock painter"
+	id = "airlock_painter"
+	build_type = AUTOLATHE
+	materials = list(MAT_METAL = 3000, MAT_GLASS = 1000)
+	build_path = /obj/item/airlock_painter
+	category = list("initial", "Miscellaneous")
+
 /datum/design/metal
 	name = "Metal"
 	id = "metal"
@@ -240,7 +240,7 @@
 	maxstack = 50
 
 /datum/design/rcd_ammo
-	name = "Compressed Matter Cardridge"
+	name = "Compressed Matter Cartridge"
 	id = "rcd_ammo"
 	build_type = AUTOLATHE
 	materials = list(MAT_METAL = 16000, MAT_GLASS=8000)
@@ -615,6 +615,14 @@
 	build_path = /obj/item/reagent_containers/hypospray/safety
 	category = list("initial", "Medical")
 
+/datum/design/automender
+	name = "Auto-mender"
+	id = "automender"
+	build_type = AUTOLATHE
+	materials = list(MAT_METAL = 1000, MAT_GLASS = 1000)
+	build_path = /obj/item/reagent_containers/applicator
+	category = list("initial", "Medical")
+
 /datum/design/prox_sensor
 	name = "Proximity Sensor"
 	id = "prox_sensor"
@@ -880,22 +888,6 @@
 	build_path = /obj/item/assembly/mousetrap
 	category = list("initial", "Miscellaneous")
 
-/datum/design/videocam
-	name = "Video Camera"
-	id = "videocam"
-	build_type = AUTOLATHE
-	materials = list(MAT_METAL = 120, MAT_GLASS = 60)
-	build_path = /obj/item/videocam
-	category = list("initial", "Miscellaneous")
-
-/datum/design/logic_board
-	name = "Logic Circuit"
-	id = "logic_board"
-	build_type = AUTOLATHE
-	materials = list(MAT_METAL = 50, MAT_GLASS = 50)
-	build_path = /obj/item/circuitboard/logic_gate
-	category = list("initial", "Electronics")
-
 /datum/design/vendor
 	name = "Machine Board (Vendor)"
 	desc = "The circuit board for a Vendor."
@@ -930,4 +922,3 @@
 	materials = list(MAT_METAL = 40000)
 	build_path = /obj/item/golem_shell
 	category = list("Imported")
-

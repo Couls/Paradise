@@ -37,8 +37,13 @@
 			var/mob/M = has_suit.loc
 			A.Grant(M)
 
-	for(var/armor_type in armor)
-		has_suit.armor[armor_type] += armor[armor_type]
+	if (islist(has_suit.armor) || isnull(has_suit.armor)) 	// This proc can run before /obj/Initialize has run for U and src,
+		has_suit.armor = getArmor(arglist(has_suit.armor))	// we have to check that the armor list has been transformed into a datum before we try to call a proc on it
+															// This is safe to do as /obj/Initialize only handles setting up the datum if actually needed.
+	if (islist(armor) || isnull(armor))
+		armor = getArmor(arglist(armor))
+
+	has_suit.armor = has_suit.armor.attachArmor(armor)
 
 	if(user)
 		to_chat(user, "<span class='notice'>You attach [src] to [has_suit].</span>")
@@ -56,8 +61,7 @@
 			var/mob/M = has_suit.loc
 			A.Remove(M)
 
-	for(var/armor_type in armor)
-		has_suit.armor[armor_type] -= armor[armor_type]
+	has_suit.armor = has_suit.armor.detachArmor(armor)
 
 	has_suit = null
 	if(user)
@@ -180,7 +184,7 @@
 	icon_state = "bronze"
 	item_color = "bronze"
 	materials = list(MAT_METAL=1000)
-	burn_state = FIRE_PROOF
+	resistance_flags = FIRE_PROOF
 
 // GOLD (awarded by centcom)
 /obj/item/clothing/accessory/medal/gold
@@ -193,6 +197,7 @@
 /obj/item/clothing/accessory/medal/gold/captain
 	name = "medal of captaincy"
 	desc = "A golden medal awarded exclusively to those promoted to the rank of captain. It signifies the codified responsibilities of a captain to Nanotrasen, and their undisputable authority over their crew."
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 
 /obj/item/clothing/accessory/medal/gold/heroism
 	name = "medal of exceptional heroism"
@@ -290,7 +295,7 @@
 			var/obj/item/pda/pda = O
 			id_card = pda.id
 
-		if(access_security in id_card.access || emagged)
+		if(ACCESS_SECURITY in id_card.access || emagged)
 			to_chat(user, "You imprint your ID details onto the badge.")
 			stored_name = id_card.registered_name
 			name = "holobadge ([stored_name])"
@@ -312,6 +317,36 @@
 /obj/item/clothing/accessory/holobadge/attack(mob/living/carbon/human/M, mob/living/user)
 	if(isliving(user))
 		user.visible_message("<span class='warning'>[user] invades [M]'s personal space, thrusting [src] into [M.p_their()] face insistently.</span>","<span class='warning'>You invade [M]'s personal space, thrusting [src] into [M.p_their()] face insistently. You are the law.</span>")
+
+//////////////
+//OBJECTION!//
+//////////////
+
+/obj/item/clothing/accessory/lawyers_badge
+	name = "attorney's badge"
+	desc = "Fills you with the conviction of JUSTICE. Lawyers tend to want to show it to everyone they meet."
+	icon_state = "lawyerbadge"
+	item_state = "lawyerbadge"
+	item_color = "lawyerbadge"
+	var/cached_bubble_icon = null
+
+/obj/item/clothing/accessory/lawyers_badge/attack_self(mob/user)
+	if(prob(1))
+		user.say("The testimony contradicts the evidence!")
+	user.visible_message("<span class='notice'>[user] shows [user.p_their()] attorney's badge.</span>", "<span class='notice'>You show your attorney's badge.</span>")
+
+/obj/item/clothing/accessory/lawyers_badge/on_attached(obj/item/clothing/under/S, mob/user)
+	..()
+	if(has_suit && ismob(has_suit.loc))
+		var/mob/M = has_suit.loc
+		cached_bubble_icon = M.bubble_icon
+		M.bubble_icon = "lawyer"
+
+/obj/item/clothing/accessory/lawyers_badge/on_removed(mob/user)
+	if(has_suit && ismob(has_suit.loc))
+		var/mob/M = has_suit.loc
+		M.bubble_icon = cached_bubble_icon
+	..()
 
 ///////////
 //SCARVES//
@@ -420,7 +455,7 @@
 	icon_state = "skull"
 	item_state = "skull"
 	item_color = "skull"
-	armor = list("melee" = 5, "bullet" = 5, "laser" = 5, "energy" = 5, "bomb" = 20, "bio" = 20, "rad" = 5)
+	armor = list("melee" = 5, "bullet" = 5, "laser" = 5, "energy" = 5, "bomb" = 20, "bio" = 20, "rad" = 5, "fire" = 0, "acid" = 25)
 	allow_duplicates = FALSE
 
 /obj/item/clothing/accessory/necklace/talisman
@@ -429,7 +464,7 @@
 	icon_state = "talisman"
 	item_state = "talisman"
 	item_color = "talisman"
-	armor = list("melee" = 5, "bullet" = 5, "laser" = 5, "energy" = 5, "bomb" = 20, "bio" = 20, "rad" = 5)
+	armor = list("melee" = 5, "bullet" = 5, "laser" = 5, "energy" = 5, "bomb" = 20, "bio" = 20, "rad" = 5, "fire" = 0, "acid" = 25)
 	allow_duplicates = FALSE
 
 /obj/item/clothing/accessory/necklace/locket
@@ -665,9 +700,9 @@
 	return access_id ? access_id.GetAccess() : ..()
 
 /obj/item/clothing/accessory/petcollar/examine(mob/user)
-	..()
+	. = ..()
 	if(access_id)
-		to_chat(user, "There is [bicon(access_id)] \a [access_id] clipped onto it.")
+		. += "There is [bicon(access_id)] \a [access_id] clipped onto it."
 
 /obj/item/clothing/accessory/petcollar/equipped(mob/living/simple_animal/user)
 	if(istype(user))

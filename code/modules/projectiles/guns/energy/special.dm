@@ -43,7 +43,7 @@
 /obj/item/gun/energy/decloner/update_icon()
 	..()
 	var/obj/item/ammo_casing/energy/shot = ammo_type[select]
-	if(power_supply.charge > shot.e_cost)
+	if(cell.charge > shot.e_cost)
 		overlays += "decloner_spin"
 
 // Flora Gun //
@@ -112,10 +112,6 @@
 	max_mod_capacity = 0
 	empty_state = null
 
-/obj/item/gun/energy/kinetic_accelerator/crossbow/ninja
-	name = "energy dart thrower"
-	ammo_type = list(/obj/item/ammo_casing/energy/dart)
-
 /obj/item/gun/energy/kinetic_accelerator/crossbow/large
 	name = "energy crossbow"
 	desc = "A reverse engineered weapon using syndicate technology."
@@ -159,27 +155,27 @@
 	can_charge = 0
 
 /obj/item/gun/energy/plasmacutter/examine(mob/user)
-	..()
-	if(power_supply)
-		to_chat(user, "<span class='notice'>[src] is [round(power_supply.percent())]% charged.</span>")
+	. = ..()
+	if(cell)
+		. += "<span class='notice'>[src] is [round(cell.percent())]% charged.</span>"
 
 /obj/item/gun/energy/plasmacutter/attackby(obj/item/A, mob/user)
 	if(istype(A, /obj/item/stack/sheet/mineral/plasma))
-		if(power_supply.charge >= power_supply.maxcharge)
+		if(cell.charge >= cell.maxcharge)
 			to_chat(user,"<span class='notice'>[src] is already fully charged.")
 			return
 		var/obj/item/stack/sheet/S = A
 		S.use(1)
-		power_supply.give(1000)
+		cell.give(1000)
 		on_recharge()
 		to_chat(user, "<span class='notice'>You insert [A] in [src], recharging it.</span>")
 	else if(istype(A, /obj/item/stack/ore/plasma))
-		if(power_supply.charge >= power_supply.maxcharge)
+		if(cell.charge >= cell.maxcharge)
 			to_chat(user,"<span class='notice'>[src] is already fully charged.")
 			return
 		var/obj/item/stack/ore/S = A
 		S.use(1)
-		power_supply.give(500)
+		cell.give(500)
 		on_recharge()
 		to_chat(user, "<span class='notice'>You insert [A] in [src], recharging it.</span>")
 	else
@@ -312,6 +308,8 @@
 	icon_state = "esniper"
 	origin_tech = "combat=6;materials=5;powerstorage=4"
 	ammo_type = list(/obj/item/ammo_casing/energy/sniper)
+	item_state = null
+	weapon_weight = WEAPON_HEAVY
 	slot_flags = SLOT_BACK
 	w_class = WEIGHT_CLASS_BULKY
 	zoomable = TRUE
@@ -341,8 +339,8 @@
 	var/emagged = 0			//ups the temperature cap from 500 to 1000, targets hit by beams over 500 Kelvin will burst into flames
 	var/dat = ""
 
-/obj/item/gun/energy/temperature/New()
-	..()
+/obj/item/gun/energy/temperature/Initialize(mapload, ...)
+	. = ..()
 	update_icon()
 	START_PROCESSING(SSobj, src)
 
@@ -422,7 +420,7 @@
 		update_icon()
 
 		if(istype(loc, /mob/living/carbon))
-			var /mob/living/carbon/M = loc
+			var/mob/living/carbon/M = loc
 			if(src == M.machine)
 				update_dat()
 				M << browse("<TITLE>Temperature Gun Configuration</TITLE><HR>[dat]", "window=tempgun;size=510x102")
@@ -489,7 +487,7 @@
 		M.update_inv_r_hand()
 
 /obj/item/gun/energy/temperature/proc/update_charge()
-	var/charge = power_supply.charge
+	var/charge = cell.charge
 	switch(charge)
 		if(900 to INFINITY)		overlays += "900"
 		if(800 to 900)			overlays += "800"

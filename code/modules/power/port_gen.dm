@@ -52,12 +52,12 @@
 		return
 
 /obj/machinery/power/port_gen/examine(mob/user)
-	if(!..(user,1 ))
-		return
-	if(active)
-		to_chat(usr, "<span class='notice'>The generator is on.</span>")
-	else
-		to_chat(usr, "<span class='notice'>The generator is off.</span>")
+	. = ..()
+	if(!in_range(user, src))
+		if(active)
+			. += "<span class='notice'>The generator is on.</span>"
+		else
+			. += "<span class='notice'>The generator is off.</span>"
 
 /obj/machinery/power/port_gen/emp_act(severity)
 	var/duration = 6000 //ten minutes
@@ -154,13 +154,13 @@
 	power_gen = round(initial(power_gen) * (max(2, temp_rating) / 2))
 
 /obj/machinery/power/port_gen/pacman/examine(mob/user)
-	..(user)
-	to_chat(user, "\The [src] appears to be producing [power_gen*power_output] W.")
-	to_chat(user, "There [sheets == 1 ? "is" : "are"] [sheets] sheet\s left in the hopper.")
+	. = ..()
+	. += "\The [src] appears to be producing [power_gen*power_output] W."
+	. += "There [sheets == 1 ? "is" : "are"] [sheets] sheet\s left in the hopper."
 	if(IsBroken())
-		to_chat(user, "<span class='warning'>\The [src] seems to have broken down.</span>")
+		. += "<span class='warning'>\The [src] seems to have broken down.</span>"
 	if(overheating)
-		to_chat(user, "<span class='danger'>\The [src] is overheating!</span>")
+		. += "<span class='danger'>\The [src] is overheating!</span>"
 
 /obj/machinery/power/port_gen/pacman/HasFuel()
 	var/needed_sheets = power_output / time_per_sheet
@@ -306,7 +306,9 @@
 			exchange_parts(user, O)
 			return
 		else if(istype(O, /obj/item/crowbar) && panel_open)
-			default_deconstruction_crowbar(O)
+			default_deconstruction_crowbar(user, O)
+	else
+		return ..()
 
 /obj/machinery/power/port_gen/pacman/attack_hand(mob/user as mob)
 	..()
@@ -331,7 +333,7 @@
 		ui.open()
 		ui.set_auto_update(1)
 
-/obj/machinery/power/port_gen/pacman/ui_data(mob/user, ui_key = "main", datum/topic_state/state = default_state)
+/obj/machinery/power/port_gen/pacman/ui_data(mob/user, ui_key = "main", datum/topic_state/state = GLOB.default_state)
 	var/data[0]
 
 	data["active"] = active

@@ -17,7 +17,9 @@
 	circuit = /obj/item/circuitboard/cryopodcontrol
 	density = 0
 	interact_offline = 1
-	req_one_access = list(access_heads, access_armory) //Heads of staff or the warden can go here to claim recover items from their department that people went were cryodormed with.
+	req_one_access = list(ACCESS_HEADS, ACCESS_ARMORY) //Heads of staff or the warden can go here to claim recover items from their department that people went were cryodormed with.
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
+	flags = NODECONSTRUCT
 	var/mode = null
 
 	//Used for logging people entering cryosleep and important items they are carrying.
@@ -38,7 +40,7 @@
 
 /obj/machinery/computer/cryopod/New()
 	..()
-	for(var/T in potential_theft_objectives)
+	for(var/T in GLOB.potential_theft_objectives)
 		theft_cache += new T
 
 /obj/machinery/computer/cryopod/attack_ai()
@@ -193,7 +195,8 @@
 	icon_state = "body_scanner_0"
 	density = 1
 	anchored = 1
-
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
+	flags = NODECONSTRUCT
 	var/base_icon_state = "body_scanner_0"
 	var/occupied_icon_state = "body_scanner_1"
 	var/on_store_message = "has entered long-term storage."
@@ -272,6 +275,12 @@
 
 	return control_computer != null
 
+// So the user can use movement keys to get out of the cryopod
+/obj/machinery/cryopod/relaymove(mob/user)
+	if(user.incapacitated())
+		return FALSE
+	go_out()
+
 /obj/machinery/cryopod/proc/check_occupant_allowed(mob/M)
 	var/correct_type = 0
 	for(var/type in allow_occupant_types)
@@ -293,6 +302,7 @@
 		// Eject dead people
 		if(occupant.stat == DEAD)
 			go_out()
+			return
 
 		// Allow a gap between entering the pod and actually despawning.
 		if(world.time - time_entered < time_till_despawn)
@@ -377,7 +387,7 @@
 			cult_mode.bypass_phase()
 
 	//Update any existing objectives involving this mob.
-	for(var/datum/objective/O in all_objectives)
+	for(var/datum/objective/O in GLOB.all_objectives)
 		// We don't want revs to get objectives that aren't for heads of staff. Letting
 		// them win or lose based on cryo is silly so we remove the objective.
 		if(istype(O,/datum/objective/mutiny) && O.target == occupant.mind)
@@ -392,9 +402,10 @@
 					if(!O) return
 					O.find_target()
 					if(!(O.target))
-						all_objectives -= O
+						GLOB.all_objectives -= O
 						O.owner.objectives -= O
 						qdel(O)
+					O.owner.announce_objectives()
 	if(occupant.mind && occupant.mind.assigned_role)
 		//Handle job slot/tater cleanup.
 		var/job = occupant.mind.assigned_role
@@ -412,15 +423,15 @@
 	// Delete them from datacore.
 
 	var/announce_rank = null
-	if(PDA_Manifest.len)
-		PDA_Manifest.Cut()
-	for(var/datum/data/record/R in data_core.medical)
+	if(GLOB.PDA_Manifest.len)
+		GLOB.PDA_Manifest.Cut()
+	for(var/datum/data/record/R in GLOB.data_core.medical)
 		if((R.fields["name"] == occupant.real_name))
 			qdel(R)
-	for(var/datum/data/record/T in data_core.security)
+	for(var/datum/data/record/T in GLOB.data_core.security)
 		if((T.fields["name"] == occupant.real_name))
 			qdel(T)
-	for(var/datum/data/record/G in data_core.general)
+	for(var/datum/data/record/G in GLOB.data_core.general)
 		if((G.fields["name"] == occupant.real_name))
 			announce_rank = G.fields["rank"]
 			qdel(G)
@@ -434,7 +445,7 @@
 	control_computer.frozen_crew += "[occupant.real_name]"
 
 	var/ailist[] = list()
-	for(var/mob/living/silicon/ai/A in GLOB.living_mob_list)
+	for(var/mob/living/silicon/ai/A in GLOB.alive_mob_list)
 		ailist += A
 	if(ailist.len)
 		var/mob/living/silicon/ai/announcer = pick(ailist)
@@ -554,10 +565,9 @@
 		to_chat(user, "<span class='notice'>Dead people can not be put into cryo.</span>")
 		return
 
-	for(var/mob/living/carbon/slime/M in range(1,L))
-		if(M.Victim == L)
-			to_chat(usr, "[L.name] will not fit into the cryo pod because [L.p_they()] [L.p_have()] a slime latched onto [L.p_their()] head.")
-			return
+	if(L.has_buckled_mobs()) //mob attached to us
+		to_chat(user, "<span class='warning'>[L] will not fit into [src] because [L.p_they()] [L.p_have()] a slime latched onto [L.p_their()] head.</span>")
+		return
 
 
 	var/willing = null //We don't want to allow people to be forced into despawning.
@@ -658,10 +668,12 @@
 		to_chat(usr, "<span class='boldnotice'>\The [src] is in use.</span>")
 		return
 
-	for(var/mob/living/carbon/slime/M in range(1,usr))
-		if(M.Victim == usr)
-			to_chat(usr, "You're too busy getting your life sucked out of you.")
-			return
+	if(usr.has_buckled_mobs()) //mob attached to us
+		to_chat(usr, "<span class='warning'>[usr] will not fit into [src] because [usr.p_they()] [usr.p_have()] a slime latched onto [usr.p_their()] head.</span>")
+		return
+
+	if(usr.incapacitated() || usr.buckled) //are you cuffed, dying, lying, stunned or other
+		return
 
 	visible_message("[usr] starts climbing into [src].")
 
@@ -757,9 +769,13 @@
 
 	return ..()
 
+
 /proc/cryo_ssd(var/mob/living/carbon/person_to_cryo)
 	if(istype(person_to_cryo.loc, /obj/machinery/cryopod))
 		return 0
+	if(isobj(person_to_cryo.loc))
+		var/obj/O = person_to_cryo.loc
+		O.force_eject_occupant()
 	var/list/free_cryopods = list()
 	for(var/obj/machinery/cryopod/P in GLOB.machines)
 		if(!P.occupant && istype(get_area(P), /area/crew_quarters/sleep))

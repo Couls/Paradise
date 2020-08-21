@@ -10,6 +10,9 @@
 /turf/unsimulated/rpd_act()
 	return
 
+/turf/unsimulated/acid_act(acidpwr, acid_volume, acid_id)
+	return 0
+
 /turf/unsimulated/floor/plating/vox
 	icon_state = "plating"
 	name = "plating"
@@ -37,6 +40,6 @@
 	nitrogen = 0
 	temperature = TCMB
 
-/turf/unsimulated/floor/plating/airless/New()
-	..()
+/turf/unsimulated/floor/plating/airless/Initialize(mapload)
+	. = ..()
 	name = "plating"

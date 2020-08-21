@@ -15,19 +15,23 @@
 	var/obj/item/tape/mytape
 	var/open_panel = 0
 	var/canprint = 1
+	var/starts_with_tape = TRUE
 
 
 /obj/item/taperecorder/New()
-	mytape = new /obj/item/tape/random(src)
-	update_icon()
+	..()
+	if(starts_with_tape)
+		mytape = new /obj/item/tape/random(src)
+		update_icon()
 
 /obj/item/taperecorder/Destroy()
 	QDEL_NULL(mytape)
 	return ..()
 
 /obj/item/taperecorder/examine(mob/user)
-	if(..(user, 1))
-		to_chat(user, "The wire panel is [open_panel ? "opened" : "closed"].")
+	. = ..()
+	if(in_range(user, src))
+		. += "The wire panel is [open_panel ? "opened" : "closed"]."
 
 
 /obj/item/taperecorder/attackby(obj/item/I, mob/user)
@@ -190,13 +194,11 @@
 		if(mytape.storedinfo.len < i + 1)
 			playsleepseconds = 1
 			sleep(10)
-			T = get_turf(src)
 			atom_say("End of recording.")
 		else
 			playsleepseconds = mytape.timestamp[i + 1] - mytape.timestamp[i]
 		if(playsleepseconds > 14)
 			sleep(10)
-			T = get_turf(src)
 			atom_say("Skipping [playsleepseconds] seconds of silence.")
 			playsleepseconds = 1
 		i++
@@ -242,8 +244,8 @@
 	canprint = 1
 
 //empty tape recorders
-/obj/item/taperecorder/empty/New()
-	return
+/obj/item/taperecorder/empty
+	starts_with_tape = FALSE
 
 
 /obj/item/tape
@@ -316,4 +318,5 @@
 
 //Random colour tapes
 /obj/item/tape/random/New()
+	..()
 	icon_state = "tape_[pick("white", "blue", "red", "yellow", "purple")]"

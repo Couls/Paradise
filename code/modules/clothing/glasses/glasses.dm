@@ -104,7 +104,8 @@
 	origin_tech = "magnets=2;engineering=1"
 	prescription_upgradable = 0
 	scan_reagents = 1 //You can see reagents while wearing science goggles
-
+	resistance_flags = ACID_PROOF
+	armor = list("melee" = 0, "bullet" = 0, "laser" = 0, "energy" = 0, "bomb" = 0, "bio" = 0, "rad" = 0, "fire" = 80, "acid" = 100)
 	sprite_sheets = list(
 		"Vox" = 'icons/mob/species/vox/eyes.dmi',
 		"Grey" = 'icons/mob/species/grey/eyes.dmi',
@@ -273,6 +274,11 @@
 	see_in_dark = 0
 	flash_protect = 0
 	tint = 0
+	sprite_sheets = list(
+		"Vox" = 'icons/mob/species/vox/eyes.dmi',
+		"Drask" = 'icons/mob/species/drask/eyes.dmi',
+		"Grey" = 'icons/mob/species/grey/eyes.dmi'
+		)
 
 /obj/item/clothing/glasses/sunglasses/noir
 	name = "noir sunglasses"
@@ -370,7 +376,6 @@
 	desc = "Covers the eyes, preventing sight."
 	icon_state = "blindfold"
 	item_state = "blindfold"
-	//vision_flags = BLIND
 	flash_protect = 2
 	tint = 3				//to make them blind
 	prescription_upgradable = 0
@@ -406,7 +411,7 @@
 		if(M.glasses == src)
 			M.EyeBlind(3)
 			M.EyeBlurry(5)
-			if(!(M.disabilities & NEARSIGHTED))
+			if(!(NEARSIGHTED in M.mutations))
 				M.BecomeNearsighted()
 				spawn(100)
 					M.CureNearsighted()
@@ -449,7 +454,7 @@
 	flags = NODROP
 	flags_cover = null
 	lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
-
+	resistance_flags = LAVA_PROOF | FIRE_PROOF
 	sprite_sheets = list(
 		"Vox" = 'icons/mob/species/vox/eyes.dmi',
 		"Grey" = 'icons/mob/species/grey/eyes.dmi',

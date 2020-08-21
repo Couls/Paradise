@@ -33,6 +33,7 @@
 	origin_tech = null
 	ammo_x_offset = 3
 	selfcharge = 1
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | ACID_PROOF
 
 /obj/item/gun/energy/laser/captain/scattershot
 	name = "scatter shot laser rifle"
@@ -94,12 +95,6 @@
 	..()
 	damage = min(damage+7, 100)
 
-/obj/item/gun/energy/lasercannon/mounted
-	name = "mounted laser cannon"
-	selfcharge = 1
-	use_external_power = 1
-	charge_delay = 10
-
 /obj/item/gun/energy/lasercannon/cyborg
 
 /obj/item/gun/energy/lasercannon/cyborg/newshot()
@@ -137,6 +132,12 @@
 	var/obj/item/ammo_casing/energy/shot = ammo_type[select]
 	var/append = shot.select_name
 	overlays += image(icon = icon, icon_state = "multilensimmolator-[append]")
+
+
+/obj/item/gun/energy/immolator/multi/cyborg
+	name = "cyborg immolator cannon"
+	ammo_type = list(/obj/item/ammo_casing/energy/immolator/scatter/cyborg, /obj/item/ammo_casing/energy/immolator/strong/cyborg) // scatter is default, because it is more useful
+
 
 ////////Laser Tag////////////////////
 

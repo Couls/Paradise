@@ -35,7 +35,6 @@
 #define CANPUSH		8
 #define PASSEMOTES	16      //Mob has a cortical borer or holders inside of it that need to see emotes.
 #define GOTTAGOFAST	32
-#define GOTTAGOFAST_METH	64
 #define IGNORESLOWDOWN	128
 #define GODMODE		4096
 #define FAKEDEATH	8192	//Replaces stuff like changeling.changeling_fakedeath
@@ -101,6 +100,9 @@
 #define BODY_ZONE_PRECISE_R_HAND	"r_hand"
 #define BODY_ZONE_PRECISE_L_FOOT	"l_foot"
 #define BODY_ZONE_PRECISE_R_FOOT	"r_foot"
+
+//We will round to this value in damage calculations.
+#define DAMAGE_PRECISION 0.1
 
 //Gun Stuff
 #define SAWN_INTACT  0

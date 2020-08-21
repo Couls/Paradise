@@ -72,7 +72,7 @@
 		if(owner.restrained())
 			return 0
 	if(check_flags & AB_CHECK_STUNNED)
-		if(owner.stunned || owner.weakened)
+		if(owner.stunned || owner.IsWeakened())
 			return 0
 	if(check_flags & AB_CHECK_LYING)
 		if(owner.lying)
@@ -339,7 +339,7 @@
 
 /datum/action/item_action/remove_tape/Trigger(attack_self = FALSE)
 	if(..())
-		GET_COMPONENT_FROM(DT, /datum/component/ducttape, target)
+		var/datum/component/ducttape/DT = target.GetComponent(/datum/component/ducttape)
 		DT.remove_tape(target, usr)
 
 /datum/action/item_action/toggle_jetpack

@@ -223,7 +223,7 @@
 	finished = 1
 	buildstacktype = /obj/item/stack/sheet/mineral/diamond
 	buildstackamount = 1
-	
+
 /obj/structure/reflector/box/auto_reflect(obj/item/projectile/P)
 	P.Angle = rotation_angle
 	return ..()

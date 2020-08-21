@@ -8,10 +8,10 @@
 	light_power = 0.75
 	light_color = LIGHT_COLOR_LAVA
 
-/turf/simulated/floor/plating/lava/New()
-	..()
-
 /turf/simulated/floor/plating/lava/ex_act()
+	return
+
+/turf/simulated/floor/plating/lava/acid_act(acidpwr, acid_volume)
 	return
 
 /turf/simulated/floor/plating/lava/airless
@@ -21,7 +21,7 @@
 	if(burn_stuff(AM))
 		START_PROCESSING(SSprocessing, src)
 
-/turf/simulated/floor/plating/lava/hitby(atom/movable/AM)
+/turf/simulated/floor/plating/lava/hitby(atom/movable/AM, skipcatch, hitpush, blocked, datum/thrownthing/throwingdatum)
 	if(burn_stuff(AM))
 		START_PROCESSING(SSprocessing, src)
 
@@ -77,6 +77,8 @@
 				O.resistance_flags |= FLAMMABLE //Even fireproof things burn up in lava
 			if(O.resistance_flags & FIRE_PROOF)
 				O.resistance_flags &= ~FIRE_PROOF
+			if(O.armor.getRating("fire") > 50) //obj with 100% fire armor still get slowly burned away.
+				O.armor = O.armor.setRating(fire_value = 50)
 			O.fire_act(10000, 1000)
 
 		else if(isliving(thing))
@@ -84,17 +86,20 @@
 			var/mob/living/L = thing
 			if(L.flying)
 				continue	//YOU'RE FLYING OVER IT
+			var/buckle_check = L.buckling
+			if(!buckle_check)
+				buckle_check = L.buckled
+			if(isobj(buckle_check))
+				var/obj/O = buckle_check
+				if(O.resistance_flags & LAVA_PROOF)
+					continue
+			else if(isliving(buckle_check))
+				var/mob/living/live = buckle_check
+				if("lava" in live.weather_immunities)
+					continue
+
 			if("lava" in L.weather_immunities)
 				continue
-			if(L.buckled)
-				if(isobj(L.buckled))
-					var/obj/O = L.buckled
-					if(O.resistance_flags & LAVA_PROOF)
-						continue
-				if(isliving(L.buckled)) //Goliath riding
-					var/mob/living/live = L.buckled
-					if("lava" in live.weather_immunities)
-						continue
 
 			L.adjustFireLoss(20)
 			if(L) //mobs turning into object corpses could get deleted here.
@@ -103,6 +108,12 @@
 
 
 /turf/simulated/floor/plating/lava/attackby(obj/item/C, mob/user, params) //Lava isn't a good foundation to build on
+	return
+
+/turf/simulated/floor/plating/lava/screwdriver_act()
+	return
+
+/turf/simulated/floor/plating/lava/welder_act()
 	return
 
 /turf/simulated/floor/plating/lava/break_tile()

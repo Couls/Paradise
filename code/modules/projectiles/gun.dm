@@ -85,17 +85,17 @@
 	return ..()
 
 /obj/item/gun/examine(mob/user)
-	..()
+	. = ..()
 	if(unique_reskin && !current_skin)
-		to_chat(user, "<span class='notice'>Alt-click it to reskin it.</span>")
+		. += "<span class='notice'>Alt-click it to reskin it.</span>"
 	if(unique_rename)
-		to_chat(user, "<span class='notice'>Use a pen on it to rename it.</span>")
+		. += "<span class='notice'>Use a pen on it to rename it.</span>"
 	if(bayonet)
-		to_chat(user, "It has \a [bayonet] [can_bayonet ? "" : "permanently "]affixed to it.")
+		. += "It has \a [bayonet] [can_bayonet ? "" : "permanently "]affixed to it."
 		if(can_bayonet) //if it has a bayonet and this is false, the bayonet is permanent.
-			to_chat(user, "<span class='info'>[bayonet] looks like it can be <b>unscrewed</b> from [src].</span>")
+			. += "<span class='info'>[bayonet] looks like it can be <b>unscrewed</b> from [src].</span>"
 	else if(can_bayonet)
-		to_chat(user, "It has a <b>bayonet</b> lug on it.")
+		. += "It has a <b>bayonet</b> lug on it."
 
 /obj/item/gun/proc/process_chamber()
 	return 0
@@ -136,7 +136,7 @@
 			return
 		if(!ismob(target) || user.a_intent == INTENT_HARM) //melee attack
 			return
-		if(target == user && user.zone_sel.selecting != "mouth") //so we can't shoot ourselves (unless mouth selected)
+		if(target == user && user.zone_selected != "mouth") //so we can't shoot ourselves (unless mouth selected)
 			return
 
 	if(istype(user))//Check if the user can use the gun, if the user isn't alive(turrets) assume it can.
@@ -149,7 +149,7 @@
 		return
 
 	if(flag)
-		if(user.zone_sel.selecting == "mouth")
+		if(user.zone_selected == "mouth")
 			handle_suicide(user, target, params)
 			return
 
@@ -207,6 +207,10 @@
 	var/randomized_bonus_spread = rand(0, bonus_spread)
 
 	if(burst_size > 1)
+		if(chambered && chambered.harmful)
+			if(HAS_TRAIT(user, TRAIT_PACIFISM)) // If the user has the pacifist trait, then they won't be able to fire [src] if the round chambered inside of [src] is lethal.
+				to_chat(user, "<span class='warning'>[src] is lethally chambered! You don't want to risk harming anyone...</span>")
+				return
 		firing_burst = 1
 		for(var/i = 1 to burst_size)
 			if(!user)
@@ -236,6 +240,10 @@
 		firing_burst = 0
 	else
 		if(chambered)
+			if(HAS_TRAIT(user, TRAIT_PACIFISM)) // If the user has the pacifist trait, then they won't be able to fire [src] if the round chambered inside of [src] is lethal.
+				if(chambered.harmful) // Is the bullet chambered harmful?
+					to_chat(user, "<span class='warning'>[src] is lethally chambered! You don't want to risk harming anyone...</span>")
+					return
 			sprd = round((pick(1,-1)) * (randomized_gun_spread + randomized_bonus_spread))
 			if(!chambered.fire(target, user, params, , suppressed, zone_override, sprd))
 				shoot_with_empty_chamber(user)
@@ -293,21 +301,6 @@
 				if(loc == user)
 					A.Grant(user)
 
-	if(isscrewdriver(I))
-		if(gun_light && can_flashlight)
-			for(var/obj/item/flashlight/seclite/S in src)
-				to_chat(user, "<span class='notice'>You unscrew the seclite from [src].</span>")
-				gun_light = null
-				S.loc = get_turf(user)
-				update_gun_light(user)
-				S.update_brightness(user)
-				update_icon()
-				for(var/datum/action/item_action/toggle_gunlight/TGL in actions)
-					qdel(TGL)
-		else if(bayonet && can_bayonet) //if it has a bayonet, and the bayonet can be removed
-			bayonet.forceMove(get_turf(user))
-			clear_bayonet()
-
 	if(unique_rename)
 		if(istype(I, /obj/item/pen))
 			rename_gun(user)
@@ -330,6 +323,24 @@
 		overlays += knife_overlay
 	else
 		return ..()
+
+/obj/item/gun/screwdriver_act(mob/user, obj/item/I)
+	. = TRUE
+	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
+		return
+	if(gun_light && can_flashlight)
+		for(var/obj/item/flashlight/seclite/S in src)
+			to_chat(user, "<span class='notice'>You unscrew the seclite from [src].</span>")
+			gun_light = null
+			S.loc = get_turf(user)
+			update_gun_light(user)
+			S.update_brightness(user)
+			update_icon()
+			for(var/datum/action/item_action/toggle_gunlight/TGL in actions)
+				qdel(TGL)
+	else if(bayonet && can_bayonet) //if it has a bayonet, and the bayonet can be removed
+		bayonet.forceMove(get_turf(user))
+		clear_bayonet()
 
 /obj/item/gun/proc/toggle_gunlight()
 	set name = "Toggle Gun Light"
@@ -376,10 +387,6 @@
 		toggle_gunlight()
 		visible_message("<span class='danger'>[src]'s light fades and turns off.</span>")
 
-/obj/item/gun/pickup(mob/user)
-	. = ..()
-	if(azoom)
-		azoom.Grant(user)
 
 /obj/item/gun/dropped(mob/user)
 	..()
@@ -428,7 +435,7 @@
 
 	semicd = 1
 
-	if(!do_mob(user, target, 120) || user.zone_sel.selecting != "mouth")
+	if(!do_mob(user, target, 120) || user.zone_selected != "mouth")
 		if(user)
 			if(user == target)
 				user.visible_message("<span class='notice'>[user] decided life was worth living.</span>")
@@ -511,3 +518,27 @@
 	if(zoomable)
 		azoom = new()
 		azoom.gun = src
+		RegisterSignal(src, COMSIG_ITEM_EQUIPPED, .proc/ZoomGrantCheck)
+
+/**
+ * Proc which will be called when the gun receives the `COMSIG_ITEM_EQUIPPED` signal.
+ *
+ * This happens if the mob picks up the gun, or equips it to any of their slots.
+ * If the slot is anything other than either of their hands (such as the back slot), un-zoom them, and `Remove` the zoom action button from the mob.
+ * Otherwise, `Grant` the mob the zoom action button.
+ *
+ * Arguments:
+ * * source - the gun that got equipped, which is `src`.
+ * * user - the mob equipping the gun.
+ * * slot - the slot the gun is getting equipped to.
+ */
+/obj/item/gun/proc/ZoomGrantCheck(datum/source, mob/user, slot)
+	// Checks if the gun got equipped into either of the user's hands.
+	if(slot != slot_r_hand && slot != slot_l_hand)
+		// If its not in their hands, un-zoom, and remove the zoom action button.
+		zoom(user, FALSE)
+		azoom.Remove(user)
+		return FALSE
+
+	// The gun is equipped in their hands, give them the zoom ability.
+	azoom.Grant(user)

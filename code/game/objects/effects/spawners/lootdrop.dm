@@ -7,6 +7,7 @@
 	var/list/loot			//a list of possible items to spawn e.g. list(/obj/item, /obj/structure, /obj/effect)
 
 /obj/effect/spawner/lootdrop/New()
+	..()
 	if(loot && loot.len)
 		for(var/i = lootcount, i > 0, i--)
 			if(!loot.len) break
@@ -15,7 +16,7 @@
 				loot.Remove(lootspawn)
 
 			if(lootspawn)
-				new lootspawn(get_turf(src))
+				new lootspawn(loc)
 	qdel(src)
 
 /obj/effect/spawner/lootdrop/armory_contraband
@@ -348,8 +349,8 @@
 		return
 	var/lootspawn = pickweight(loot)
 	var/obj/vehicle/V = new lootspawn(get_turf(src))
-	if(V.keytype)
-		new V.keytype(get_turf(src))
+	if(V.key_type)
+		new V.key_type(get_turf(src))
 	qdel(src)
 
 
